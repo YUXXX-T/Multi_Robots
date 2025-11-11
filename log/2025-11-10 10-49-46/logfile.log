@@ -1,0 +1,660 @@
+2025-11-10 10:49:51 - root - INFO - Round 0, Timestep 0: The robot states are:
+robot 0: node id: 535, goal id: 1, path: [535, 534, 566, 598, 630, 629, 661, 660, 692];
+robot 1: node id: 689, goal id: 1, path: [689, 657, 656, 624, 623, 591];
+robot 2: node id: 1023, goal id: 1, path: [1023, 991, 990, 989, 988, 987, 986, 985, 1017];
+robot 3: node id: 809, goal id: 1, path: [809, 810, 811, 812, 813, 814, 846, 847, 848];
+robot 4: node id: 105, goal id: 1, path: [105, 104, 103, 71];
+robot 5: node id: 858, goal id: 1, path: [858, 857];
+robot 6: node id: 241, goal id: 1, path: [241, 242, 274];
+robot 7: node id: 322, goal id: 1, path: [322, 321, 353, 385];
+robot 8: node id: 669, goal id: 1, path: [669, 637, 638, 639];
+robot 9: node id: 52, goal id: 1, path: [52, 53, 54, 55, 56];
+
+2025-11-10 10:49:53 - root - INFO - Round 0, Timestep 1: The robot states are:
+robot 0: node id: 535, goal id: 1, path: [534, 566, 598, 630, 629, 661, 660, 692];
+robot 1: node id: 689, goal id: 1, path: [657, 656, 624, 623, 591];
+robot 2: node id: 1023, goal id: 1, path: [991, 990, 989, 988, 987, 986, 985, 1017];
+robot 3: node id: 809, goal id: 1, path: [810, 811, 812, 813, 814, 846, 847, 848];
+robot 4: node id: 105, goal id: 1, path: [104, 103, 71];
+robot 5: node id: 858, goal id: 1, path: [857];
+robot 6: node id: 241, goal id: 1, path: [242, 274];
+robot 7: node id: 322, goal id: 1, path: [321, 353, 385];
+robot 8: node id: 669, goal id: 1, path: [637, 638, 639];
+robot 9: node id: 52, goal id: 1, path: [53, 54, 55, 56];
+
+2025-11-10 10:49:56 - root - INFO - Round 0, Timestep 2: The robot states are:
+robot 0: node id: 534, goal id: 1, path: [566, 598, 630, 629, 661, 660, 692];
+robot 1: node id: 657, goal id: 1, path: [656, 624, 623, 591];
+robot 2: node id: 991, goal id: 1, path: [990, 989, 988, 987, 986, 985, 1017];
+robot 3: node id: 810, goal id: 1, path: [811, 812, 813, 814, 846, 847, 848];
+robot 4: node id: 104, goal id: 1, path: [103, 71];
+robot 5: node id: 857, goal id: 1, path: [];
+robot 6: node id: 242, goal id: 1, path: [274];
+robot 7: node id: 321, goal id: 1, path: [353, 385];
+robot 8: node id: 637, goal id: 1, path: [638, 639];
+robot 9: node id: 53, goal id: 1, path: [54, 55, 56];
+
+2025-11-10 10:49:58 - root - INFO - Round 0, Timestep 3: The robot states are:
+robot 0: node id: 566, goal id: 1, path: [598, 630, 629, 661, 660, 692];
+robot 1: node id: 656, goal id: 1, path: [624, 623, 591];
+robot 2: node id: 990, goal id: 1, path: [989, 988, 987, 986, 985, 1017];
+robot 3: node id: 811, goal id: 1, path: [812, 813, 814, 846, 847, 848];
+robot 4: node id: 103, goal id: 1, path: [71];
+robot 5: node id: 857, goal id: 1, path: [];
+robot 6: node id: 274, goal id: 1, path: [];
+robot 7: node id: 353, goal id: 1, path: [385];
+robot 8: node id: 638, goal id: 1, path: [639];
+robot 9: node id: 54, goal id: 1, path: [55, 56];
+
+2025-11-10 10:50:01 - root - INFO - Round 0, Timestep 4: The robot states are:
+robot 0: node id: 598, goal id: 1, path: [630, 629, 661, 660, 692];
+robot 1: node id: 624, goal id: 1, path: [623, 591];
+robot 2: node id: 989, goal id: 1, path: [988, 987, 986, 985, 1017];
+robot 3: node id: 812, goal id: 1, path: [813, 814, 846, 847, 848];
+robot 4: node id: 71, goal id: 1, path: [];
+robot 5: node id: 857, goal id: 1, path: [];
+robot 6: node id: 274, goal id: 1, path: [];
+robot 7: node id: 385, goal id: 1, path: [];
+robot 8: node id: 639, goal id: 1, path: [];
+robot 9: node id: 55, goal id: 1, path: [56];
+
+2025-11-10 10:50:03 - root - INFO - Round 0, Timestep 5: The robot states are:
+robot 0: node id: 630, goal id: 1, path: [629, 661, 660, 692];
+robot 1: node id: 623, goal id: 1, path: [591];
+robot 2: node id: 988, goal id: 1, path: [987, 986, 985, 1017];
+robot 3: node id: 813, goal id: 1, path: [814, 846, 847, 848];
+robot 4: node id: 71, goal id: 1, path: [];
+robot 5: node id: 857, goal id: 1, path: [];
+robot 6: node id: 274, goal id: 1, path: [];
+robot 7: node id: 385, goal id: 1, path: [];
+robot 8: node id: 639, goal id: 1, path: [];
+robot 9: node id: 56, goal id: 1, path: [];
+
+2025-11-10 10:50:06 - root - INFO - Round 0, Timestep 6: The robot states are:
+robot 0: node id: 629, goal id: 1, path: [661, 660, 692];
+robot 1: node id: 591, goal id: 1, path: [];
+robot 2: node id: 987, goal id: 1, path: [986, 985, 1017];
+robot 3: node id: 814, goal id: 1, path: [846, 847, 848];
+robot 4: node id: 71, goal id: 1, path: [];
+robot 5: node id: 857, goal id: 1, path: [];
+robot 6: node id: 274, goal id: 1, path: [];
+robot 7: node id: 385, goal id: 1, path: [];
+robot 8: node id: 639, goal id: 1, path: [];
+robot 9: node id: 56, goal id: 1, path: [];
+
+2025-11-10 10:50:08 - root - INFO - Round 0, Timestep 7: The robot states are:
+robot 0: node id: 661, goal id: 1, path: [660, 692];
+robot 1: node id: 591, goal id: 1, path: [];
+robot 2: node id: 986, goal id: 1, path: [985, 1017];
+robot 3: node id: 846, goal id: 1, path: [847, 848];
+robot 4: node id: 71, goal id: 1, path: [];
+robot 5: node id: 857, goal id: 1, path: [];
+robot 6: node id: 274, goal id: 1, path: [];
+robot 7: node id: 385, goal id: 1, path: [];
+robot 8: node id: 639, goal id: 1, path: [];
+robot 9: node id: 56, goal id: 1, path: [];
+
+2025-11-10 10:50:11 - root - INFO - Round 0, Timestep 8: The robot states are:
+robot 0: node id: 660, goal id: 1, path: [692];
+robot 1: node id: 591, goal id: 1, path: [];
+robot 2: node id: 985, goal id: 1, path: [1017];
+robot 3: node id: 847, goal id: 1, path: [848];
+robot 4: node id: 71, goal id: 1, path: [];
+robot 5: node id: 857, goal id: 1, path: [];
+robot 6: node id: 274, goal id: 1, path: [];
+robot 7: node id: 385, goal id: 1, path: [];
+robot 8: node id: 639, goal id: 1, path: [];
+robot 9: node id: 56, goal id: 1, path: [];
+
+2025-11-10 10:50:18 - root - INFO - Round 1, Timestep 0: The robot states are:
+robot 0: node id: 692, goal id: 1, path: [692, 724, 756, 788, 820, 852];
+robot 1: node id: 591, goal id: 1, path: [591, 559, 527, 526, 525, 524, 523, 522];
+robot 2: node id: 1017, goal id: 1, path: [1017, 1016, 984, 983, 951, 950, 949, 948, 980, 1012];
+robot 3: node id: 848, goal id: 1, path: [848, 849, 881];
+robot 4: node id: 71, goal id: 1, path: [71, 70, 102];
+robot 5: node id: 857, goal id: 1, path: [857, 856, 888, 920, 952, 951];
+robot 6: node id: 274, goal id: 1, path: [274, 273, 305];
+robot 7: node id: 385, goal id: 1, path: [385, 353, 354, 322, 290, 291, 259, 227, 228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 639, goal id: 1, path: [639, 638, 670, 702, 734, 766, 765, 764, 763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 56, goal id: 1, path: [56, 57];
+
+2025-11-10 10:50:21 - root - INFO - Round 1, Timestep 1: The robot states are:
+robot 0: node id: 692, goal id: 1, path: [724, 756, 788, 820, 852];
+robot 1: node id: 591, goal id: 1, path: [559, 527, 526, 525, 524, 523, 522];
+robot 2: node id: 1017, goal id: 1, path: [1016, 984, 983, 951, 950, 949, 948, 980, 1012];
+robot 3: node id: 848, goal id: 1, path: [849, 881];
+robot 4: node id: 71, goal id: 1, path: [70, 102];
+robot 5: node id: 857, goal id: 1, path: [856, 888, 920, 952, 951];
+robot 6: node id: 274, goal id: 1, path: [273, 305];
+robot 7: node id: 385, goal id: 1, path: [353, 354, 322, 290, 291, 259, 227, 228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 639, goal id: 1, path: [638, 670, 702, 734, 766, 765, 764, 763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 56, goal id: 1, path: [57];
+
+2025-11-10 10:50:23 - root - INFO - Round 1, Timestep 2: The robot states are:
+robot 0: node id: 724, goal id: 1, path: [756, 788, 820, 852];
+robot 1: node id: 559, goal id: 1, path: [527, 526, 525, 524, 523, 522];
+robot 2: node id: 1016, goal id: 1, path: [984, 983, 951, 950, 949, 948, 980, 1012];
+robot 3: node id: 849, goal id: 1, path: [881];
+robot 4: node id: 70, goal id: 1, path: [102];
+robot 5: node id: 856, goal id: 1, path: [888, 920, 952, 951];
+robot 6: node id: 273, goal id: 1, path: [305];
+robot 7: node id: 353, goal id: 1, path: [354, 322, 290, 291, 259, 227, 228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 638, goal id: 1, path: [670, 702, 734, 766, 765, 764, 763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:26 - root - INFO - Round 1, Timestep 3: The robot states are:
+robot 0: node id: 756, goal id: 1, path: [788, 820, 852];
+robot 1: node id: 527, goal id: 1, path: [526, 525, 524, 523, 522];
+robot 2: node id: 984, goal id: 1, path: [983, 951, 950, 949, 948, 980, 1012];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 888, goal id: 1, path: [920, 952, 951];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 354, goal id: 1, path: [322, 290, 291, 259, 227, 228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 670, goal id: 1, path: [702, 734, 766, 765, 764, 763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:28 - root - INFO - Round 1, Timestep 4: The robot states are:
+robot 0: node id: 788, goal id: 1, path: [820, 852];
+robot 1: node id: 526, goal id: 1, path: [525, 524, 523, 522];
+robot 2: node id: 983, goal id: 1, path: [951, 950, 949, 948, 980, 1012];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 920, goal id: 1, path: [952, 951];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 322, goal id: 1, path: [290, 291, 259, 227, 228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 702, goal id: 1, path: [734, 766, 765, 764, 763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:31 - root - INFO - Round 1, Timestep 5: The robot states are:
+robot 0: node id: 820, goal id: 1, path: [852];
+robot 1: node id: 525, goal id: 1, path: [524, 523, 522];
+robot 2: node id: 951, goal id: 1, path: [950, 949, 948, 980, 1012];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 952, goal id: 1, path: [951];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 290, goal id: 1, path: [291, 259, 227, 228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 734, goal id: 1, path: [766, 765, 764, 763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:33 - root - INFO - Round 1, Timestep 6: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 524, goal id: 1, path: [523, 522];
+robot 2: node id: 950, goal id: 1, path: [949, 948, 980, 1012];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 291, goal id: 1, path: [259, 227, 228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 766, goal id: 1, path: [765, 764, 763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:36 - root - INFO - Round 1, Timestep 7: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 523, goal id: 1, path: [522];
+robot 2: node id: 949, goal id: 1, path: [948, 980, 1012];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 259, goal id: 1, path: [227, 228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 765, goal id: 1, path: [764, 763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:38 - root - INFO - Round 1, Timestep 8: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 948, goal id: 1, path: [980, 1012];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 227, goal id: 1, path: [228, 229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 764, goal id: 1, path: [763, 762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:40 - root - INFO - Round 1, Timestep 9: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 980, goal id: 1, path: [1012];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 228, goal id: 1, path: [229, 230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 763, goal id: 1, path: [762, 794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:43 - root - INFO - Round 1, Timestep 10: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 229, goal id: 1, path: [230, 231, 199, 167, 168, 169, 170];
+robot 8: node id: 762, goal id: 1, path: [794, 826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:45 - root - INFO - Round 1, Timestep 11: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 230, goal id: 1, path: [231, 199, 167, 168, 169, 170];
+robot 8: node id: 794, goal id: 1, path: [826, 825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:48 - root - INFO - Round 1, Timestep 12: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 231, goal id: 1, path: [199, 167, 168, 169, 170];
+robot 8: node id: 826, goal id: 1, path: [825, 857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:50 - root - INFO - Round 1, Timestep 13: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 199, goal id: 1, path: [167, 168, 169, 170];
+robot 8: node id: 825, goal id: 1, path: [857, 889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:53 - root - INFO - Round 1, Timestep 14: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 167, goal id: 1, path: [168, 169, 170];
+robot 8: node id: 857, goal id: 1, path: [889, 888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:55 - root - INFO - Round 1, Timestep 15: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 168, goal id: 1, path: [169, 170];
+robot 8: node id: 889, goal id: 1, path: [888, 887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:50:58 - root - INFO - Round 1, Timestep 16: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 169, goal id: 1, path: [170];
+robot 8: node id: 888, goal id: 1, path: [887, 886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:00 - root - INFO - Round 1, Timestep 17: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 887, goal id: 1, path: [886, 918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:03 - root - INFO - Round 1, Timestep 18: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 886, goal id: 1, path: [918, 950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:05 - root - INFO - Round 1, Timestep 19: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 918, goal id: 1, path: [950, 949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:08 - root - INFO - Round 1, Timestep 20: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 950, goal id: 1, path: [949, 948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:10 - root - INFO - Round 1, Timestep 21: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [];
+robot 1: node id: 522, goal id: 1, path: [];
+robot 2: node id: 1012, goal id: 1, path: [];
+robot 3: node id: 881, goal id: 1, path: [];
+robot 4: node id: 102, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 949, goal id: 1, path: [948];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:17 - root - INFO - Round 2, Timestep 0: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [852, 820, 819, 818, 817, 816, 815, 814, 813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 522, goal id: 1, path: [522, 521, 520, 519, 518, 550, 549, 548, 547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 1012, goal id: 1, path: [1012, 1011, 979, 978, 977, 945, 944, 943, 942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 881, goal id: 1, path: [881, 880, 879, 878, 877, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 102, goal id: 1, path: [102, 103, 104, 105, 106, 138, 139, 140];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:20 - root - INFO - Round 2, Timestep 1: The robot states are:
+robot 0: node id: 852, goal id: 1, path: [820, 819, 818, 817, 816, 815, 814, 813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 522, goal id: 1, path: [521, 520, 519, 518, 550, 549, 548, 547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 1012, goal id: 1, path: [1011, 979, 978, 977, 945, 944, 943, 942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 881, goal id: 1, path: [880, 879, 878, 877, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 102, goal id: 1, path: [103, 104, 105, 106, 138, 139, 140];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:22 - root - INFO - Round 2, Timestep 2: The robot states are:
+robot 0: node id: 820, goal id: 1, path: [819, 818, 817, 816, 815, 814, 813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 521, goal id: 1, path: [520, 519, 518, 550, 549, 548, 547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 1011, goal id: 1, path: [979, 978, 977, 945, 944, 943, 942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 880, goal id: 1, path: [879, 878, 877, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 103, goal id: 1, path: [104, 105, 106, 138, 139, 140];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:25 - root - INFO - Round 2, Timestep 3: The robot states are:
+robot 0: node id: 819, goal id: 1, path: [818, 817, 816, 815, 814, 813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 520, goal id: 1, path: [519, 518, 550, 549, 548, 547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 979, goal id: 1, path: [978, 977, 945, 944, 943, 942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 879, goal id: 1, path: [878, 877, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 104, goal id: 1, path: [105, 106, 138, 139, 140];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:27 - root - INFO - Round 2, Timestep 4: The robot states are:
+robot 0: node id: 818, goal id: 1, path: [817, 816, 815, 814, 813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 519, goal id: 1, path: [518, 550, 549, 548, 547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 978, goal id: 1, path: [977, 945, 944, 943, 942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 878, goal id: 1, path: [877, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 105, goal id: 1, path: [106, 138, 139, 140];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:30 - root - INFO - Round 2, Timestep 5: The robot states are:
+robot 0: node id: 817, goal id: 1, path: [816, 815, 814, 813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 518, goal id: 1, path: [550, 549, 548, 547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 977, goal id: 1, path: [945, 944, 943, 942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 877, goal id: 1, path: [909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 106, goal id: 1, path: [138, 139, 140];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:32 - root - INFO - Round 2, Timestep 6: The robot states are:
+robot 0: node id: 816, goal id: 1, path: [815, 814, 813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 550, goal id: 1, path: [549, 548, 547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 945, goal id: 1, path: [944, 943, 942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 909, goal id: 1, path: [908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 138, goal id: 1, path: [139, 140];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:35 - root - INFO - Round 2, Timestep 7: The robot states are:
+robot 0: node id: 815, goal id: 1, path: [814, 813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 549, goal id: 1, path: [548, 547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 944, goal id: 1, path: [943, 942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 908, goal id: 1, path: [907, 906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 139, goal id: 1, path: [140];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:37 - root - INFO - Round 2, Timestep 8: The robot states are:
+robot 0: node id: 814, goal id: 1, path: [813, 812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 548, goal id: 1, path: [547, 579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 943, goal id: 1, path: [942, 910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 907, goal id: 1, path: [906, 905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:40 - root - INFO - Round 2, Timestep 9: The robot states are:
+robot 0: node id: 813, goal id: 1, path: [812, 811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 547, goal id: 1, path: [579, 611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 942, goal id: 1, path: [910, 909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 906, goal id: 1, path: [905, 904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:42 - root - INFO - Round 2, Timestep 10: The robot states are:
+robot 0: node id: 812, goal id: 1, path: [811, 810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 579, goal id: 1, path: [611, 643, 675, 707, 739, 771, 770];
+robot 2: node id: 910, goal id: 1, path: [909, 908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 905, goal id: 1, path: [904, 903, 902, 901, 900, 899, 898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:45 - root - INFO - Round 2, Timestep 11: The robot states are:
+robot 0: node id: 811, goal id: 1, path: [810, 842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 611, goal id: 1, path: [643, 675, 707, 739, 771, 770];
+robot 2: node id: 909, goal id: 1, path: [908, 907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 904, goal id: 1, path: [903, 902, 901, 900, 899, 898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:47 - root - INFO - Round 2, Timestep 12: The robot states are:
+robot 0: node id: 810, goal id: 1, path: [842, 874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 643, goal id: 1, path: [675, 707, 739, 771, 770];
+robot 2: node id: 908, goal id: 1, path: [907, 906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 903, goal id: 1, path: [902, 901, 900, 899, 898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:50 - root - INFO - Round 2, Timestep 13: The robot states are:
+robot 0: node id: 842, goal id: 1, path: [874, 873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 675, goal id: 1, path: [707, 739, 771, 770];
+robot 2: node id: 907, goal id: 1, path: [906, 905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 902, goal id: 1, path: [901, 900, 899, 898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:52 - root - INFO - Round 2, Timestep 14: The robot states are:
+robot 0: node id: 874, goal id: 1, path: [873, 872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 707, goal id: 1, path: [739, 771, 770];
+robot 2: node id: 906, goal id: 1, path: [905, 904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 901, goal id: 1, path: [900, 899, 898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:55 - root - INFO - Round 2, Timestep 15: The robot states are:
+robot 0: node id: 873, goal id: 1, path: [872, 871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 739, goal id: 1, path: [771, 770];
+robot 2: node id: 905, goal id: 1, path: [904, 903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 900, goal id: 1, path: [899, 898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:51:58 - root - INFO - Round 2, Timestep 16: The robot states are:
+robot 0: node id: 872, goal id: 1, path: [871, 870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 771, goal id: 1, path: [770];
+robot 2: node id: 904, goal id: 1, path: [903, 902, 901, 900, 899, 898, 897];
+robot 3: node id: 899, goal id: 1, path: [898];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:52:00 - root - INFO - Round 2, Timestep 17: The robot states are:
+robot 0: node id: 871, goal id: 1, path: [870, 869, 868, 867, 866, 865, 833];
+robot 1: node id: 770, goal id: 1, path: [];
+robot 2: node id: 903, goal id: 1, path: [902, 901, 900, 899, 898, 897];
+robot 3: node id: 898, goal id: 1, path: [];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:52:03 - root - INFO - Round 2, Timestep 18: The robot states are:
+robot 0: node id: 870, goal id: 1, path: [869, 868, 867, 866, 865, 833];
+robot 1: node id: 770, goal id: 1, path: [];
+robot 2: node id: 902, goal id: 1, path: [901, 900, 899, 898, 897];
+robot 3: node id: 898, goal id: 1, path: [];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:52:05 - root - INFO - Round 2, Timestep 19: The robot states are:
+robot 0: node id: 869, goal id: 1, path: [868, 867, 866, 865, 833];
+robot 1: node id: 770, goal id: 1, path: [];
+robot 2: node id: 901, goal id: 1, path: [900, 899, 898, 897];
+robot 3: node id: 898, goal id: 1, path: [];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:52:08 - root - INFO - Round 2, Timestep 20: The robot states are:
+robot 0: node id: 868, goal id: 1, path: [867, 866, 865, 833];
+robot 1: node id: 770, goal id: 1, path: [];
+robot 2: node id: 900, goal id: 1, path: [899, 898, 897];
+robot 3: node id: 898, goal id: 1, path: [];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:52:11 - root - INFO - Round 2, Timestep 21: The robot states are:
+robot 0: node id: 867, goal id: 1, path: [866, 865, 833];
+robot 1: node id: 770, goal id: 1, path: [];
+robot 2: node id: 899, goal id: 1, path: [898, 897];
+robot 3: node id: 898, goal id: 1, path: [];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:52:13 - root - INFO - Round 2, Timestep 22: The robot states are:
+robot 0: node id: 866, goal id: 1, path: [865, 833];
+robot 1: node id: 770, goal id: 1, path: [];
+robot 2: node id: 898, goal id: 1, path: [897];
+robot 3: node id: 898, goal id: 1, path: [];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
+2025-11-10 10:52:16 - root - INFO - Round 2, Timestep 23: The robot states are:
+robot 0: node id: 865, goal id: 1, path: [833];
+robot 1: node id: 770, goal id: 1, path: [];
+robot 2: node id: 897, goal id: 1, path: [];
+robot 3: node id: 898, goal id: 1, path: [];
+robot 4: node id: 140, goal id: 1, path: [];
+robot 5: node id: 951, goal id: 1, path: [];
+robot 6: node id: 305, goal id: 1, path: [];
+robot 7: node id: 170, goal id: 1, path: [];
+robot 8: node id: 948, goal id: 1, path: [];
+robot 9: node id: 57, goal id: 1, path: [];
+
