@@ -285,7 +285,7 @@ class CooperativeAStar(PathPlanner):
         for pos, t in path:
             self.__spacetime_occupied[(pos, t)] = robot_id
 
-    def _validate_all_paths(self, all_paths: Dict[int, List[Tuple[int, int]]]) -> Optional[str]:
+    def _validate_all_paths(self, all_paths: Dict[int, List[Tuple[int, int]]]) -> Optional[Dict]:
         """
         驗證所有路徑是否有衝突
         返回: None(無衝突) 或者 衝突描述字符串
@@ -333,89 +333,84 @@ class CooperativeAStar(PathPlanner):
                                 }
         return None
 
-    def _resolve_conflict_by_waiting(self, conflict_info: Dict,
-                                 all_paths: Dict[int, List[Tuple[int, int]]]) -> bool:
+    def _replan_robot_round(self,
+                          robot_id: int,
+                          start: int,
+                          goal: int,
+                          previous_round_robots: Dict[int, Tuple[int, int]],
+                          *,
+                          is_first_robot: bool = False,
+                          max_replan: int = 10) -> Optional[List[Tuple[int, int]]]:
         """
-        通過讓低優先級機器人等待來解決衝突
-        假設情況：衝突只發生在對齊延長階段
-        返回: True表示成功解決，False表示無法解决
+        把plan()中“單個機器人一整輪”的重規劃流程獨立封裝：
+            -反復A*規劃
+            -首機器人首輪強制延長上一輪
+            -衝突檢測與對方延長
+            -接受路徑->佔用時空錶->立刻對齊到當前最大時間
+        接受成功返回路徑，否則返回None。
+        會直接修改：
+            - self.__current_round_paths
+            - self.__spacetime_occupied
+            - previous_round_robots（若發生延長）
         """
-        robot1_id = conflict_info['robot1']
-        robot2_id = conflict_info['robot2']
-        conflict_pos = conflict_info['position']
-        conflict_time = conflict_info['time']
-        # 確定優先級（ID小的優先級更高）
-        if robot1_id < robot2_id:
-            high_priority_id = robot1_id
-            low_priority_id = robot2_id
-        else:
-            high_priority_id = robot2_id
-            low_priority_id = robot1_id
+        for replan_count in range(max_replan):
+            # 1. 規劃
+            path = self._plan_single_robot_with_offset(start, goal, robot_id)
+            if path is None:
+                print("   無法找到路徑！")
+                return None
 
-        print(f"\n   衝突解決：讓機器人 {low_priority_id} 等待機器人 {high_priority_id}")
-        high_path = all_paths[high_priority_id]
-        low_path = all_paths[low_priority_id]
+            path_end_time = path[-1][1]
+            if replan_count == 0:
+                print(f"   初始路徑: 長度 {len(path)}, 結束時間 {path_end_time}")
+            else:
+                print(f"   第 {replan_count} 次重規劃: 長度 {len(path)}, 結束時間 {path_end_time}")
 
-        # 找到高優先級機器人離開衝突位置的時間
-        leave_time = None
-        for i, (pos, t) in enumerate(high_path):
-            if pos == conflict_pos and t >= conflict_time:
-                # 找到下一個不在conflict_pos的時間
-                for j in range(i + 1, len(high_path)):
-                    if high_path[j][0] != conflict_pos:
-                        leave_time = high_path[j][1]
-                        break
-                if leave_time is None:
-                    # 高優先級機器人一直停在这里
-                    leave_time = high_path[-1][1] + 1
-                break
+            # 2) 首個機器人首輪：强制把上一輪全部延長到該路徑結束時間，然後重新規劃
+            if is_first_robot and replan_count == 0 and previous_round_robots:
+                print("\n   第一個機器人强制延長上一輪")
+                extended_count = 0
+                for prev_rid, (prev_pos, prev_time) in previous_round_robots.items():
+                    for t in range(prev_time + 1, path_end_time + 1):
+                        if (prev_pos, t) not in self.__spacetime_occupied:
+                            self.__spacetime_occupied[(prev_pos, t)] = prev_rid
+                            extended_count += 1
+                    previous_round_robots[prev_rid] = (prev_pos, path_end_time)
+                print(f"   延長了 {extended_count} 個時空點")
+                print("   强制重新規劃...")
+                continue
 
-        if leave_time is None:
-            print(f"   無法確定高優先級機器人離開時間")
-            return False
+            # 3. 衝突檢查
+            conflict = self._check_conflict(
+                path,
+                robot_id,
+                previous_round_robots,
+                self.__current_round_paths
+            )
+            if conflict:
+                print(f"   檢測到衝突: 位置 {conflict['position']}, 時間 {conflict['time']}")
+                # 延長衝突機器人到當前路徑終點，再重規劃
+                self._extend_conflicting_robots(
+                    conflict,
+                    path_end_time,
+                    previous_round_robots,
+                    self.__current_round_paths
+                )
+                continue
 
-        print(f"   高優先級機器人 {high_priority_id} 在時間 {leave_time} 離開位置 {conflict_pos}")
+            # 4) 無衝突則 接受路徑、占用、立刻對齊
+            print("   路徑有效")
+            self.__current_round_paths[robot_id] = path
+            self._occupy_spacetime(path, robot_id)
 
-        # 修改低優先級机器人的路径：在conflict_pos之前等待
-        new_low_path = []
-        wait_inserted = False
+            # 對齊必須在接受後立刻運行，否则下一台機器人可能基於未對齊的狀態規劃
+            self._align_all_robots(previous_round_robots, self.__current_round_paths)
+            return path
 
-        for i, (pos, t) in enumerate(low_path):
-            if not wait_inserted and pos == conflict_pos and t < leave_time:
-                # 需要插入等待
-                wait_duration = leave_time - t
-                print(f"   在位置 {pos} 之前插入 {wait_duration} 步等待")
-                # 在前一个位置等待
-                if i > 0:
-                    wait_pos = low_path[i - 1][0]
-                    wait_start_time = low_path[i - 1][1]
-                else:
-                    # 第一個位置就是衝突位置，在原地等待
-                    wait_pos = pos
-                    wait_start_time = t
-                # 添加之前的路徑
-                for j in range(i):
-                    new_low_path.append(low_path[j])
-                # 插入等待
-                for wait_t in range(wait_start_time + 1, wait_start_time + wait_duration + 1):
-                    new_low_path.append((wait_pos, wait_t))
-                # 添加剩餘路徑（時間偏移）
-                time_offset = wait_duration
-                for j in range(i, len(low_path)):
-                    old_pos, old_t = low_path[j]
-                    new_low_path.append((old_pos, old_t + time_offset))
+        print("   重規劃次數超過限額！")
+        return None
 
-                wait_inserted = True
-                break
-        if not wait_inserted:
-            print(f"   無法插入等待")
-            return False
 
-        # 更新路徑
-        all_paths[low_priority_id] = new_low_path
-        print(f"   新路徑長度: {len(new_low_path)}, 結束時間: {new_low_path[-1][1]}")
-
-        return True
 
     # 規劃函數
     def plan(self, robot_start_id_dict: Dict[int, int],
@@ -464,73 +459,107 @@ class CooperativeAStar(PathPlanner):
 
             is_first_robot = (idx == 0)
 
-            # 重規劃循環
-            for replan_count in range(10):
-                # 規劃路徑
-                path = self._plan_single_robot_with_offset(start, goal, robot_id)
-                if path is None:
-                    print(f"   無法找到路徑！")
-                    return {}
-
-                path_end_time = path[-1][1]
-                if replan_count == 0:
-                    print(f"   初始路徑: 長度 {len(path)}, 結束時間 {path_end_time}")
-                else:
-                    print(f"   第 {replan_count} 次重規劃: 長度 {len(path)}, 結束時間 {path_end_time}")
-                # 第一個機器人强制延長上一輪
-                if is_first_robot and replan_count == 0 and previous_round_robots:
-                    print(f"\n   第一個機器人强制延長上一輪")
-                    extended_count = 0
-                    for prev_rid, (prev_pos, prev_time) in previous_round_robots.items():
-                        for t in range(prev_time + 1, path_end_time + 1):
-                            if (prev_pos, t) not in self.__spacetime_occupied:
-                                self.__spacetime_occupied[(prev_pos, t)] = prev_rid
-                                extended_count += 1
-                        # 更新previous_round_robots
-                        previous_round_robots[prev_rid] = (prev_pos, path_end_time)
-
-                    print(f"   延長了 {extended_count} 個時空點")
-                    print(f"   强制重新規劃...")
-                    continue  #  跳過衝突檢查 直接重規劃
-
-                # 衝突檢查
-                conflict = self._check_conflict(
-                    path,
-                    robot_id,
-                    previous_round_robots,
-                    self.__current_round_paths
-                )
-                if conflict:
-                    print(f"   檢測到衝突: 位置 {conflict['position']}, 時間 {conflict['time']}")
-                    # 延長衝突的機器人
-                    self._extend_conflicting_robots(
-                        conflict,
-                        path_end_time,
-                        previous_round_robots,
-                        self.__current_round_paths
-                    )
-                    continue  # 重新規劃
-
-                # 無衝突 接受路徑
-                print(f"   路徑有效")
-                self.__current_round_paths[robot_id] = path
-                self._occupy_spacetime(path, robot_id)
-                break
-
-            else:  # for-else
-                print(f"   重規劃次數超過限額！")
+            # # 重規劃循環
+            # for replan_count in range(10):
+            #     # 規劃路徑
+            #     path = self._plan_single_robot_with_offset(start, goal, robot_id)
+            #     if path is None:
+            #         print(f"   無法找到路徑！")
+            #         return {}
+            #
+            #     path_end_time = path[-1][1]
+            #     if replan_count == 0:
+            #         print(f"   初始路徑: 長度 {len(path)}, 結束時間 {path_end_time}")
+            #     else:
+            #         print(f"   第 {replan_count} 次重規劃: 長度 {len(path)}, 結束時間 {path_end_time}")
+            #     # 第一個機器人强制延長上一輪
+            #     if is_first_robot and replan_count == 0 and previous_round_robots:
+            #         print(f"\n   第一個機器人强制延長上一輪")
+            #         extended_count = 0
+            #         for prev_rid, (prev_pos, prev_time) in previous_round_robots.items():
+            #             for t in range(prev_time + 1, path_end_time + 1):
+            #                 if (prev_pos, t) not in self.__spacetime_occupied:
+            #                     self.__spacetime_occupied[(prev_pos, t)] = prev_rid
+            #                     extended_count += 1
+            #             # 更新previous_round_robots
+            #             previous_round_robots[prev_rid] = (prev_pos, path_end_time)
+            #
+            #         print(f"   延長了 {extended_count} 個時空點")
+            #         print(f"   强制重新規劃...")
+            #         continue  #  跳過衝突檢查 直接重規劃
+            #
+            #     # 衝突檢查
+            #     conflict = self._check_conflict(
+            #         path,
+            #         robot_id,
+            #         previous_round_robots,
+            #         self.__current_round_paths
+            #     )
+            #     if conflict:
+            #         print(f"   檢測到衝突: 位置 {conflict['position']}, 時間 {conflict['time']}")
+            #         # 延長衝突的機器人
+            #         self._extend_conflicting_robots(
+            #             conflict,
+            #             path_end_time,
+            #             previous_round_robots,
+            #             self.__current_round_paths
+            #         )
+            #         continue  # 重新規劃
+            #
+            #     # 無衝突 接受路徑
+            #     print(f"   路徑有效")
+            #     self.__current_round_paths[robot_id] = path
+            #     self._occupy_spacetime(path, robot_id)
+            #     break
+            #
+            # else:  # for-else
+            #     print(f"   重規劃次數超過限額！")
+            #     return {}
+            #
+            # # 對齊所有機器人
+            # self._align_all_robots(previous_round_robots, self.__current_round_paths)
+            path = self._replan_robot_round(
+                robot_id,
+                start,
+                goal,
+                previous_round_robots,
+                is_first_robot=is_first_robot,
+                max_replan=10
+            )
+            if path is None:
                 return {}
-
-            # 對齊所有機器人
-            self._align_all_robots(previous_round_robots, self.__current_round_paths)
 
         # 3. 最終驗證階段
         print(f"\n{'=' * 60}")
         print(f"最終路徑驗證...")
         conflict_msg = self._validate_all_paths(self.__current_round_paths)
         if conflict_msg:
-            # TODO等待策略
-            return {}
+        #     # TODO等待策略
+            conflict_robot1 = conflict_msg['robot1']
+            conflict_robot2 = conflict_msg['robot2']
+            replan_robotid = min(conflict_robot1, conflict_robot2)
+            old_path = self.__current_round_paths.pop(replan_robotid, None)
+            if old_path:
+                removed_count = 0
+                for pos, t in old_path:
+                    # 只刪除屬於該機器人的佔用
+                    if self.__spacetime_occupied.get((pos, t)) == replan_robotid:
+                        del self.__spacetime_occupied[(pos, t)]
+                        removed_count += 1
+                print(f"   已移除機器人 {replan_robotid} 的 {removed_count} 個時空佔用點")
+
+            new_plan = self._replan_robot_round(
+                replan_robotid,
+                robot_start_id_dict[replan_robotid],
+                robot_goal_id_dict[replan_robotid],
+                previous_round_robots,
+                is_first_robot = False,
+                max_replan = 10
+            )
+            if new_plan is None:
+                print("   最終驗證階段重規劃失敗，終止。")
+                return {}
+
 
         # 4. 收尾階段
         # 更新 previous_round_info（为下一輪做準備）
