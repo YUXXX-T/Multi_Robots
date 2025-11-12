@@ -1,23 +1,14 @@
+
 import networkx as nx
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Set, Optional
+from heapq import heappush, heappop
 from map_module.map import Map
 from path_planner.path_planner import PathPlanner
 from stastar.planner import Planner
 
-from typing import Dict, List, Tuple, Set, Optional
-from heapq import heappush, heappop
-
 
 class Node:
-    """
-    搜索節點
-
-    position: int   # 當前位置ID
-    time: int       # 當前時間步
-    g_cost: float   # 從起點到當前節點的實際代價
-    h_cost: float   # 從當前節點到終點的啟發式估計代價
-    parent: Optional['Node'] = None   # 父節點，用於回溯路徑
-    """
+    """搜索節點"""
     def __init__(self, position: int, time: int, g_cost: float, h_cost: float, parent: Optional['Node'] = None):
         self.position = position
         self.time = time
@@ -27,331 +18,148 @@ class Node:
 
     @property
     def f_cost(self) -> float:
-        """ 縂代價為： f = g + h """
         return self.g_cost + self.h_cost
 
     def __lt__(self, other):
-        """ 用於優先隊列的比較 """
         return self.f_cost < other.f_cost
+
 
 class CooperativeAStar(PathPlanner):
     def __init__(self, map_input: Map):
         super().__init__(map_input)
         self.__G = map_input.G
 
-        # 用時空表記錄每個(位置, 時間)被哪個機器人占用
-        # 格式: {(position, time): robot_id}
-        self.__reservation_table: Dict[Tuple[int, int], int] = {}
+        # 核心數據結構-三層分離形式
+        # 1. 上一輪機器人的終態信息
+        self.__previous_round_info: Dict[int, Tuple[int, int]] = {}  # {robot_id: (end_position, end_time)}
+        # 2. 當前論的路徑（規劃完成後清空）
+        self.__current_round_paths: Dict[int, List[Tuple[int, int]]] = {}
+        # 3. 時空占用表索引（用於快碰撞檢測）
+        self.__spacetime_occupied: Dict[Tuple[int, int], int] = {}  # {(position, time): robot_id}
 
-        # 預計算所有節點對之間的最短距離（用於啟發式函數）
-        # 這會在初始化時計算一次，提高後續規劃效率
+        # 全局時間偏移
+        self.__global_time_offset = 0
+        # 預計算最短距離（用於啓發式計算）
         self.__shortest_distances = self.__precompute_shortest_distances()
 
-        # 全局時間位移
-        self.__global_time_offset = 0  # 記錄當前是第幾輪規劃
-
+    # 狀態管理
     def set_state(self, reservation_table: Dict[Tuple[int, int], int], time_offset: int):
-        self.__reservation_table = reservation_table.copy()
+        """設置狀態（用於外部調用）"""
+        self.__spacetime_occupied = reservation_table.copy()
         self.__global_time_offset = time_offset
 
+        # 從reservation_table重建previous_round_info
+        self.__previous_round_info.clear()
+        robot_last_state = {}
+        for (pos, t), rid in reservation_table.items():
+            if rid not in robot_last_state or t > robot_last_state[rid][1]:
+                robot_last_state[rid] = (pos, t)
+        self.__previous_round_info = robot_last_state
+
     def get_reservation_table(self) -> Dict[Tuple[int, int], int]:
-        return self.__reservation_table
-
+        """獲取預定表"""
+        return self.__spacetime_occupied.copy()
     def get_time_offset(self) -> int:
+        """獲取時間偏移"""
         return self.__global_time_offset
+    def clear_reservation_table(self):
+        """清空所有狀態"""
+        self.__spacetime_occupied.clear()
+        self.__previous_round_info.clear()
+        self.__current_round_paths.clear()
+        self.__global_time_offset = 0
 
+    # 預計算和啓發式計算
     def __precompute_shortest_distances(self) -> Dict[Tuple[int, int], float]:
-        """
-        預計算所有節點對之間的最短距離
-        返回:
-             最短距離字典 {(node1, node2): distance}
-        說明:
-            使用Floyd-Warshall或多次Dijkstra算法計算
-            這個預計算能顯著提高啟發式函數的準確性和速度
-        """
+        """預計算所有節點對之間的最短距離"""
         try:
-            # 這個用的是什麽算？
-            # all_pairs = dict(nx.all_pairs_shortest_path_length(self.__G))
             all_pairs = dict(nx.all_pairs_dijkstra_path_length(self.__G, weight='weight'))
-
             distances = {}
             for source, targets in all_pairs.items():
                 for target, length in targets.items():
                     distances[(source, target)] = length
             return distances
-
         except Exception as e:
-            print(f"警告：無法預計算最短距離：{e}")
+            print(f"Waring！無法預計算最短距離：{e}")
             return {}
 
     def __heuristic(self, current: int, goal: int) -> float:
-        """
-        啟發式函數：估計從當前位置到目標位置的距離
-        參數:
-            current: 當前位置ID
-            goal: 目標位置ID
-        返回:
-            估計距離
-        說明:
-            使用預計算的最短距離作為啟發式值
-            這是一個可接受的（admissible）啟發式，保證找到最優解
-        """
-        # 如果預計算成功，使用精確的最短距離   爲什麽要預計？
+        """啓發式函數"""
         if (current, goal) in self.__shortest_distances:
             return self.__shortest_distances[(current, goal)]
-        # 否則返回0（退化為Dijkstra算法）
         return 0
 
+    # 碰撞檢測
     def _is_valid_move(self, from_pos: int, to_pos: int, time: int, robot_id: int) -> bool:
-        """
-        檢查移動是否有效（避免衝突）
-        參數:
-            from_pos: 起始位置      to_pos: 目標位置    time: 到達目標位置的時間     robot_id: 當前機器人ID
-        返回:
-            True如果移動有效，False如果有衝突
-
-        需要檢查的衝突類型:
-        1. 頂點衝突 (Vertex Conflict): 兩個機器人在同一時間占用同一位置
-        2. 邊衝突 (Edge Conflict): 兩個機器人在同一時間交換位置
-        3. 圖結構約束: 確保移動在圖中是合法的
-        """
-        # 檢查移動是否在圖結構中合法    圖結構合法是什麽？
+        """檢查移動是否有效"""
+        # 檢查在地圖的合法性
         if from_pos != to_pos:
             if not self.__G.has_edge(from_pos, to_pos):
-                return False  # 圖中不存在這條邊
-        # 檢查目標位置在目標時間是否被占用（頂點衝突）
-        if (to_pos, time) in self.__reservation_table:
-            occupying_robot = self.__reservation_table[(to_pos, time)]
-            if occupying_robot != robot_id:
                 return False
-
-        # 檢查邊衝突：其他機器人是否在同一時間從to_pos移動到from_pos
-        if (from_pos, time) in self.__reservation_table and (to_pos, time-1) in self.__reservation_table:
-            robot_at_from = self.__reservation_table[(from_pos, time)]
-            robot_at_to_prev = self.__reservation_table[(to_pos, time-1)]
-            # 如果有機器人在time時刻占用from_pos，
-            # 且在time-1時刻占用to_pos，則發生交叉衝突
+        # 檢查頂點衝突
+        if (to_pos, time) in self.__spacetime_occupied:
+            if self.__spacetime_occupied[(to_pos, time)] != robot_id:
+                return False
+        # 檢查邊衝突（交換位置）
+        if (from_pos, time) in self.__spacetime_occupied and (to_pos, time - 1) in self.__spacetime_occupied:
+            robot_at_from = self.__spacetime_occupied[(from_pos, time)]
+            robot_at_to_prev = self.__spacetime_occupied[(to_pos, time - 1)]
             if robot_at_from == robot_at_to_prev and robot_at_from != robot_id:
                 return False
-        # 检查同向跟随冲突
-        # 如果前面的机器人在time-1时刻在to_pos，在time时刻也在to_pos（等待）
-        # 不能在time时刻进入to_pos
-        if (to_pos, time-1) in self.__reservation_table:
-            prev_occupant = self.__reservation_table[(to_pos, time-1)]
+        # 檢查跟隨衝突
+        if (to_pos, time - 1) in self.__spacetime_occupied:
+            prev_occupant = self.__spacetime_occupied[(to_pos, time - 1)]
             if prev_occupant != robot_id:
-                if (to_pos, time) in self.__reservation_table:
-                    if self.__reservation_table[(to_pos, time)] == prev_occupant:
-                        return False
-            # 如果 to_pos 在 time-1 被占用，且在 time 仍被同一机器人占用，说明那个机器人在等待
-            if (to_pos, time - 1) in self.__reservation_table and (to_pos, time) in self.__reservation_table:
-                prev_robot = self.__reservation_table[(to_pos, time - 1)]
-                curr_robot = self.__reservation_table[(to_pos, time)]
-
-                if prev_robot == curr_robot and prev_robot != robot_id:
-                    # 有其他机器人在 to_pos 等待，不能进入
-                    return False
-
-            # 检查是否有机器人从 to_pos 等待到未来
-            # 扫描 to_pos 的未来时间片段
-            if (to_pos, time) in self.__reservation_table:
-                future_occupant = self.__reservation_table[(to_pos, time)]
-                if future_occupant != robot_id:
-                    # 检查这个机器人是否从过去就在等待
-                    check_time = time - 1
-                    while check_time >= 0:
-                        if (to_pos, check_time) not in self.__reservation_table:
-                            break
-                        if self.__reservation_table[(to_pos, check_time)] != future_occupant:
-                            break
-                        check_time -= 1
-                    else:
-                        # 说明future_occupant一直在to_pos等待
+                if (to_pos, time) in self.__spacetime_occupied:
+                    if self.__spacetime_occupied[(to_pos, time)] == prev_occupant:
                         return False
         return True
 
+    # 路徑重建
     def _reconstruct_path(self, node: Node) -> List[Tuple[int, int]]:
-        """
-        從目標節點回溯構建完整路徑
-        參數:
-            node: 目標節點
-        返回:
-            路徑列表，格式 [(position, time), ...]
-        """
+        """從目標節點回溯構建路徑"""
         path = []
         current = node
-
         while current is not None:
             path.append((current.position, current.time))
             current = current.parent
         return path[::-1]
 
-    def _reserve_path(self, path: List[Tuple[int, int]], robot_id: int):
-        """
-        在預定表中預定路徑
-        參數:
-            path: 路徑列表 [(position, time), ...]
-            robot_id: 機器人ID
-        說明:
-            將機器人的整條路徑加入預定表
-            後續機器人規劃時會查詢這個表來避免衝突
-        """
-
-        for position, time in path:
-            self.__reservation_table[(position, time)] = robot_id
-
-    def _reserve_goal_indefinitely(self, all_paths: Dict[int, List[Tuple[int, int]]]):
-        if not all_paths:
-            return
-
-        max_time = max(path[-1][1] for path in all_paths.values())
-        # 为每个机器人预定目标位置到最大时间+安全边界
-        safety_margin = 10  # 安全边界，可调整
-        for robot_id, path in all_paths.items():
-            final_pos = path[-1][0]
-            final_time = path[-1][1]
-
-            # 预定从完成时间到最大时间+安全边界
-            for t in range(final_time + 1, max_time + safety_margin):
-                self.__reservation_table[(final_pos, t)] = robot_id
-
-
-
-    def _plan_single_robot(self, start: int, goal: int, robot_id: int, max_time: int = 1000) -> Optional[List[Tuple[int, int]]]:
-        """
-        為單個機器人規劃路徑（基於時空A*算法）
-        參數:
-            start: 起始位置ID
-            goal: 目標位置ID
-            robot_id: 機器人ID
-            max_time: 最大搜索時間步（防止無限循環）
-        返回:
-            路徑列表或None（如果找不到路徑）
-        算法流程:
-            1. 初始化起始節點，加入open list
-            2. 從open list取出f_cost最小的節點
-            3. 如果到達目標，回溯路徑
-            4. 否則擴展鄰居節點（包括等待動作）
-            5. 重複2-4直到找到路徑或open list為空
-        """
-        # 檢查起點和終點是否在圖中
-        if start not in self.__G.nodes or goal not in self.__G.nodes:
-            print(f"Wrong with start: {start}, goal: {goal}")
-            return None
-
-        # 初始化起始節點
-        start_node = Node(
-            position=start,
-            time=0,
-            g_cost=0,
-            h_cost=self.__heuristic(start, goal)
-        )
-
-        # openlist: 待探索的節點
-        open_list = []
-        heappush(open_list, start_node)
-
-        # close set: 已探索的(位置, 時間)對
-        closed_set: Set[Tuple[int, int]] = set()
-
-        while open_list:
-            # 取出f_cost最小的節點 自動地
-            current = heappop(open_list)
-
-            if current.position == goal:
-                return self._reconstruct_path(current)
-
-            state = (current.position, current.time)
-            # 如果已探索過，跳過
-            if state in closed_set:
-                continue
-            # 標記為已探索
-            closed_set.add(state)
-
-            if current.time >= max_time:
-                continue
-
-            # 探索所有可能的動作
-            # 動作1: 移動到相鄰節點
-            # 使用NetworkX獲取鄰居節點, 不出意外就是四領域
-            neighbors = list(self.__G.neighbors(current.position))
-            for neighbor in neighbors:
-                if self._is_valid_move(current.position, neighbor, current.time+1, robot_id):
-                    # 獲取邊的權重（如果有的話）  這是怎麽計算的？
-                    edge_data = self.__G.get_edge_data(current.position, neighbor)
-                    edge_cost = edge_data.get('weight', 1) if edge_data else 1
-
-                    new_node = Node(
-                        position = neighbor,
-                        time = current.time+1,
-                        g_cost = current.g_cost + edge_cost,
-                        h_cost = self.__heuristic(neighbor, goal),
-                        parent = current
-
-                    )
-                    heappush(open_list, new_node)
-
-            # 動作2: 等待動作（停留在原地）
-            # 這對於避讓其他機器人很重要
-            if self._is_valid_move(current.position, current.position, current.time+1, robot_id):
-                wait_node = Node(
-                    position = current.position,
-                    time = current.time + 1,
-                    g_cost = current.g_cost +1, # 等待代價
-                    h_cost = self.__heuristic(current.position, goal),
-                    parent = current
-                )
-                heappush(open_list, wait_node)
-
-        return None
-
+    # 單機器人規劃
     def _plan_single_robot_with_offset(self, start: int, goal: int, robot_id: int,
-                                       max_time: int = 1000, period_offset: int = 0) -> Optional[List[Tuple[int, int]]]:
-        """
-        为单个机器人规划路径（考虑全局时间偏移）
-        """
+                                       max_time: int = 1000) -> Optional[List[Tuple[int, int]]]:
+        """為單個機器人構造路徑（考慮全局時間偏移）"""
         if start not in self.__G.nodes or goal not in self.__G.nodes:
-            print(f"Wrong with start: {start}, goal: {goal}")
             return None
-
-        # 起始時間使用全局偏移
         start_node = Node(
             position=start,
-            time=self.__global_time_offset+period_offset,
+            time=self.__global_time_offset,
             g_cost=0,
             h_cost=self.__heuristic(start, goal)
         )
 
-        # openlist: 待探索的節點
         open_list = []
         heappush(open_list, start_node)
-
-        # close set: 已探索的(位置, 時間)對
         closed_set: Set[Tuple[int, int]] = set()
 
         while open_list:
-            # 取出f_cost最小的節點 自動地
             current = heappop(open_list)
 
             if current.position == goal:
                 return self._reconstruct_path(current)
 
             state = (current.position, current.time)
-            # 如果已探索過，跳過
             if state in closed_set:
                 continue
-            # 標記為已探索
             closed_set.add(state)
 
             if current.time >= self.__global_time_offset + max_time:
                 continue
 
-            # 探索所有可能的動作
-            # 動作1: 移動到相鄰節點
-            # 使用NetworkX獲取鄰居節點, 不出意外就是四領域
+            # 移動到四鄰域
             neighbors = list(self.__G.neighbors(current.position))
             for neighbor in neighbors:
                 if self._is_valid_move(current.position, neighbor, current.time + 1, robot_id):
-                    # 獲取邊的權重（如果有的話）  這是怎麽計算的？
                     edge_data = self.__G.get_edge_data(current.position, neighbor)
                     edge_cost = edge_data.get('weight', 1) if edge_data else 1
 
@@ -361,17 +169,15 @@ class CooperativeAStar(PathPlanner):
                         g_cost=current.g_cost + edge_cost,
                         h_cost=self.__heuristic(neighbor, goal),
                         parent=current
-
                     )
                     heappush(open_list, new_node)
 
-            # 動作2: 等待動作（停留在原地）
-            # 這對於避讓其他機器人很重要
+            # 等待動作
             if self._is_valid_move(current.position, current.position, current.time + 1, robot_id):
                 wait_node = Node(
                     position=current.position,
                     time=current.time + 1,
-                    g_cost=current.g_cost + 1.5,  # 等待代價
+                    g_cost=current.g_cost + 1.5,
                     h_cost=self.__heuristic(current.position, goal),
                     parent=current
                 )
@@ -379,480 +185,378 @@ class CooperativeAStar(PathPlanner):
 
         return None
 
-    def plan(self,
-             robot_start_id_dict: Dict[int, int],
+    # 檢查衝突處理函數
+    def _check_conflict(self, path: List[Tuple[int, int]], robot_id: int,
+                        previous_round_robots: Dict[int, Tuple[int, int]],
+                        current_round_paths: Dict[int, List[Tuple[int, int]]]) -> Optional[Dict]:
+        """
+        檢查路徑衝突
+        返回: None(无冲突) 或 衝突信息
+        """
+        path_end_time = path[-1][1]
+
+        # 收集可能衝突的位置
+        conflict_positions = set()
+        # 1. 上一輪機器人的終點（如果時間更短）
+        for prev_rid, (prev_pos, prev_time) in previous_round_robots.items():
+            if prev_time < path_end_time:
+                conflict_positions.add(prev_pos)
+
+        # 2. 當前輪中已經規劃機器人的終點（如果時間更短）
+        for other_rid, other_path in current_round_paths.items():
+            other_end_time = other_path[-1][1]
+            other_end_pos = other_path[-1][0]
+            if other_end_time < path_end_time:
+                conflict_positions.add(other_end_pos)
+
+        # 檢查路徑是否經過這些衝突位置
+        for pos, t in path:
+            if pos in conflict_positions:
+                conflicting_robots = []
+
+                # 找到衝突終點屬於的機器人id
+                for prev_rid, (prev_pos, prev_time) in previous_round_robots.items():
+                    if prev_pos == pos and prev_time < t:
+                        conflicting_robots.append(('previous', prev_rid, prev_pos, prev_time))
+
+                for other_rid, other_path in current_round_paths.items():
+                    other_end_time = other_path[-1][1]
+                    other_end_pos = other_path[-1][0]
+                    if other_end_pos == pos and other_end_time < t:
+                        conflicting_robots.append(('current', other_rid, other_end_pos, other_end_time))
+
+                if conflicting_robots:
+                    return {
+                        'position': pos,
+                        'time': t,
+                        'conflicting_robots': conflicting_robots
+                    }
+
+        return None
+
+    def _extend_conflicting_robots(self, conflict: Dict, target_time: int,
+                                   previous_round_robots: Dict[int, Tuple[int, int]],
+                                   current_round_paths: Dict[int, List[Tuple[int, int]]]):
+        """延長發生衝突的機器人"""
+        extended_count = 0
+
+        for robot_type, rid, pos, current_end_time in conflict['conflicting_robots']:
+            print(f"      延長 {robot_type} 機器人 {rid}: {current_end_time} -> {target_time}")
+
+            for t in range(current_end_time + 1, target_time + 1):
+                if (pos, t) not in self.__spacetime_occupied:
+                    self.__spacetime_occupied[(pos, t)] = rid
+                    extended_count += 1
+
+            # 更新記錄
+            if robot_type == 'previous':
+                previous_round_robots[rid] = (pos, target_time)
+            else:
+                # 延長當前輪路徑
+                for t in range(current_end_time + 1, target_time + 1):
+                    current_round_paths[rid].append((pos, t))
+        print(f"      共延長 {extended_count} 個時空點")
+
+    def _align_all_robots(self, previous_round_robots: Dict[int, Tuple[int, int]],
+                          current_round_paths: Dict[int, List[Tuple[int, int]]]):
+        """對齊所有機器人到最大時間"""
+        if not current_round_paths:
+            return
+
+        max_time = max(p[-1][1] for p in current_round_paths.values())
+
+        # 對齊上一輪機器人
+        for rid, (pos, end_time) in previous_round_robots.items():
+            for t in range(end_time + 1, max_time + 1):
+                if (pos, t) not in self.__spacetime_occupied:
+                    self.__spacetime_occupied[(pos, t)] = rid
+
+        # 對齊當前輪機器人
+        for rid, path in current_round_paths.items():
+            end_pos = path[-1][0]
+            end_time = path[-1][1]
+            for t in range(end_time + 1, max_time + 1):
+                if (end_pos, t) not in self.__spacetime_occupied:
+                    self.__spacetime_occupied[(end_pos, t)] = rid
+                    path.append((end_pos, t))
+
+    def _occupy_spacetime(self, path: List[Tuple[int, int]], robot_id: int):
+        """占用時空表"""
+        for pos, t in path:
+            self.__spacetime_occupied[(pos, t)] = robot_id
+
+    def _validate_all_paths(self, all_paths: Dict[int, List[Tuple[int, int]]]) -> Optional[str]:
+        """
+        驗證所有路徑是否有衝突
+        返回: None(無衝突) 或者 衝突描述字符串
+        """
+        # 1. 檢查頂點衝突
+        spacetime_occupation: Dict[Tuple[int, int], int] = {}
+
+        for robot_id, path in all_paths.items():
+            for pos, t in path:
+                if (pos, t) in spacetime_occupation:
+                    other_robot = spacetime_occupation[(pos, t)]
+                    return {
+                        'type': 'vertex',
+                        'robot1': robot_id,
+                        'robot2': other_robot,
+                        'position': pos,
+                        'time': t,
+                        'description': f"頂點衝突: 機器人 {robot_id} 和 {other_robot} 在時間 {t} 都占用位置 {pos}"
+                        }
+                spacetime_occupation[(pos, t)] = robot_id
+
+        # 2. 檢查邊衝突（交換位置）
+        for robot_id, path in all_paths.items():
+            for i in range(len(path) - 1):
+                pos1, t1 = path[i]
+                pos2, t2 = path[i + 1]
+
+                # 檢查是否有其他機器人在同一時間从pos2移動到pos1
+                for other_id, other_path in all_paths.items():
+                    if other_id == robot_id:
+                        continue
+                    for j in range(len(other_path) - 1):
+                        other_pos1, other_t1 = other_path[j]
+                        other_pos2, other_t2 = other_path[j + 1]
+                        # 邊衝突：两個機器人交換位置
+                        if (pos1 == other_pos2 and pos2 == other_pos1 and
+                                t1 == other_t1 and t2 == other_t2):
+                                return {
+                                    'type': 'edge',
+                                    'robot1': robot_id,
+                                    'robot2': other_id,
+                                    'edge': (pos1, pos2),
+                                    'time': t1,
+                                    'description': f"邊衝突: 機器人 {robot_id} 和 {other_id} 在時間 {t1}->{t2} 交換位置 {pos1}<->{pos2}"
+                                }
+        return None
+
+    def _resolve_conflict_by_waiting(self, conflict_info: Dict,
+                                 all_paths: Dict[int, List[Tuple[int, int]]]) -> bool:
+        """
+        通過讓低優先級機器人等待來解決衝突
+        假設情況：衝突只發生在對齊延長階段
+        返回: True表示成功解決，False表示無法解决
+        """
+        robot1_id = conflict_info['robot1']
+        robot2_id = conflict_info['robot2']
+        conflict_pos = conflict_info['position']
+        conflict_time = conflict_info['time']
+        # 確定優先級（ID小的優先級更高）
+        if robot1_id < robot2_id:
+            high_priority_id = robot1_id
+            low_priority_id = robot2_id
+        else:
+            high_priority_id = robot2_id
+            low_priority_id = robot1_id
+
+        print(f"\n   衝突解決：讓機器人 {low_priority_id} 等待機器人 {high_priority_id}")
+        high_path = all_paths[high_priority_id]
+        low_path = all_paths[low_priority_id]
+
+        # 找到高優先級機器人離開衝突位置的時間
+        leave_time = None
+        for i, (pos, t) in enumerate(high_path):
+            if pos == conflict_pos and t >= conflict_time:
+                # 找到下一個不在conflict_pos的時間
+                for j in range(i + 1, len(high_path)):
+                    if high_path[j][0] != conflict_pos:
+                        leave_time = high_path[j][1]
+                        break
+                if leave_time is None:
+                    # 高優先級機器人一直停在这里
+                    leave_time = high_path[-1][1] + 1
+                break
+
+        if leave_time is None:
+            print(f"   無法確定高優先級機器人離開時間")
+            return False
+
+        print(f"   高優先級機器人 {high_priority_id} 在時間 {leave_time} 離開位置 {conflict_pos}")
+
+        # 修改低優先級机器人的路径：在conflict_pos之前等待
+        new_low_path = []
+        wait_inserted = False
+
+        for i, (pos, t) in enumerate(low_path):
+            if not wait_inserted and pos == conflict_pos and t < leave_time:
+                # 需要插入等待
+                wait_duration = leave_time - t
+                print(f"   在位置 {pos} 之前插入 {wait_duration} 步等待")
+                # 在前一个位置等待
+                if i > 0:
+                    wait_pos = low_path[i - 1][0]
+                    wait_start_time = low_path[i - 1][1]
+                else:
+                    # 第一個位置就是衝突位置，在原地等待
+                    wait_pos = pos
+                    wait_start_time = t
+                # 添加之前的路徑
+                for j in range(i):
+                    new_low_path.append(low_path[j])
+                # 插入等待
+                for wait_t in range(wait_start_time + 1, wait_start_time + wait_duration + 1):
+                    new_low_path.append((wait_pos, wait_t))
+                # 添加剩餘路徑（時間偏移）
+                time_offset = wait_duration
+                for j in range(i, len(low_path)):
+                    old_pos, old_t = low_path[j]
+                    new_low_path.append((old_pos, old_t + time_offset))
+
+                wait_inserted = True
+                break
+        if not wait_inserted:
+            print(f"   無法插入等待")
+            return False
+
+        # 更新路徑
+        all_paths[low_priority_id] = new_low_path
+        print(f"   新路徑長度: {len(new_low_path)}, 結束時間: {new_low_path[-1][1]}")
+
+        return True
+
+    # 規劃函數
+    def plan(self, robot_start_id_dict: Dict[int, int],
              robot_goal_id_dict: Dict[int, int],
              priority_order: Optional[List[int]] = None) -> Dict[int, List[Tuple[int, int]]]:
-        """
-        CA*主函數：為所有機器人規劃協作路徑
-        參數:
-            robot_start_id_dict: 機器人起始位置字典 {robot_id: start_position}
-            robot_goal_id_dict: 機器人目標位置字典 {robot_id: goal_position}
-            priority_order: 可選的優先級順序列表，如果不提供則按robot_id排序
-        返回:
-            所有機器人的路徑字典 {robot_id: [(position, time), ...]}  如果規劃失敗返回空字典
-        算法流程:
-            1. 清空預定表
-            2. 確定機器人優先級順序
-            3. 按優先級順序為每個機器人規劃路徑
-            4. 每規劃完一個機器人，將其路徑加入預定表
-            5. 後續機器人規劃時會自動避開已預定的時空位置
-        """
-        # 保留 >= global_time_offset的預定表  __reservation_table : Dict[Tuple[pos, t], robot_id]
-        # keys_to_remove = [k for k in self.__reservation_table.keys()
-        #                   if k[1] < self.__global_time_offset]
-        # for k in keys_to_remove:
-        #     del self.__reservation_table[k]
-        self.__reservation_table = {
-            k: v for k, v in self.__reservation_table.items()
-            if k[1] >= self.__global_time_offset
-        }
+        """CA*函數"""
 
+        # 1. 準備階段
         if set(robot_start_id_dict.keys()) != set(robot_goal_id_dict.keys()):
-            print(f"Error with {len(robot_start_id_dict.keys())}")
+            print("Error! 起點與終點數目不匹配！")
             return {}
 
-        all_paths: Dict[int, List[Tuple[int, int]]] = {}
-        robot_real_end_info: Dict[int, Tuple[int, int]] = {}  # {robot_id: (end_pos, end_time)}
         if priority_order is None:
             robot_ids = sorted(robot_start_id_dict.keys())
         else:
             robot_ids = priority_order
             if set(robot_ids) != set(robot_start_id_dict.keys()):
-                print(f"Error with priority order")
+                print("Error! 優先級列表不匹配！")
                 return {}
 
-        def get_max_reservation_time():
-            return max((t for (pos, t) in self.__reservation_table.keys()), default=0)
+        # 清空當前輪規劃結構
+        self.__current_round_paths.clear()
 
-        def get_robot_end_positions():
-            max_time = get_max_reservation_time()
-            end_positions = {}
-            if max_time == 0:
-                # 第一輪：使用起點
-                for rid in robot_ids:
-                    end_positions[rid] = robot_start_id_dict[rid]
-            else:
-                # 後續輪次：從預定表提取
-                for (pos, t), rid in self.__reservation_table.items():
-                    if t == max_time:
-                        end_positions[rid] = pos
-                # 補充當前輪次的機器人起點
-                for rid in robot_ids:
-                    if rid not in end_positions:
-                        end_positions[rid] = robot_start_id_dict[rid]
-            return end_positions
-        # reservation_table 最大時間
-        # max_reservation_table_time = max(
-        #     t for (pos, t) in self.__reservation_table.keys()) \
-        #     if self.__reservation_table else 0
-        #
-        # # 記錄每輪的機器人初始化位置
-        # robot_real_end_pos: Dict[int, int] = {}  # {robot_id: pos}
-        # if max_reservation_table_time == 0:
-        #     for idx, robot_id in enumerate(robot_ids):
-        #         robot_real_end_pos[robot_id] = robot_start_id_dict[robot_id]
-        # else:
-        #     robots_at_max_time = {}
-        #     for (pos, t), robot_id in self.__reservation_table.items():
-        #         if t == max_reservation_table_time:
-        #             # robot_real_end_pos[robot_id] = pos
-        #             robots_at_max_time[robot_id] = pos
-        #     all_robot_ids = set(robot_start_id_dict.keys()) | set(robots_at_max_time.keys())
-        #     for rid in all_robot_ids:
-        #         if rid in robots_at_max_time:
-        #             robot_real_end_pos[rid] = robots_at_max_time[rid]
-        #         elif rid in robot_start_id_dict:
-        #             robot_real_end_pos[rid] = robot_start_id_dict[rid]
+        # 識別上一輪機器人
+        current_robot_set = set(robot_ids)
+        previous_round_robots = {
+            rid: info for rid, info in self.__previous_round_info.items()
+            if rid not in current_robot_set
+        }
 
-        print(f"開始為 {len(robot_ids)} 個機器人規劃路徑...")
-        print(f"優先級順序: {robot_ids}")
+        print(f"\n{'=' * 60}")
+        print(f"開始新一輪規劃")
+        print(f"當前機器人: {robot_ids}")
+        if previous_round_robots:
+            print(f"上一輪機器人: {list(previous_round_robots.keys())}")
+            for rid, (pos, t) in previous_round_robots.items():
+                print(f"  機器人 {rid}: 位置 {pos}, 時間 {t}")
         print(f"全局時間偏移: {self.__global_time_offset}")
-        print(f"預定表大小: {len(self.__reservation_table)}")
+        print(f"{'=' * 60}\n")
 
+        # 2. 單機器人逐步規劃
         for idx, robot_id in enumerate(robot_ids):
-            # 規劃初始化
             start = robot_start_id_dict[robot_id]
             goal = robot_goal_id_dict[robot_id]
-
             print(f"\n[{idx + 1}/{len(robot_ids)}] 規劃機器人 {robot_id}: {start} -> {goal}")
 
+            is_first_robot = (idx == 0)
+
             # 重規劃循環
-            max_replans = 10
-            found_valid_path = False
-            final_path = None
-            for replan_count in range(max_replans):
-                # 每次规划前都获取最新状态
-                current_max_res_time = get_max_reservation_time()
-                robot_end_positions = get_robot_end_positions()
+            for replan_count in range(10):
                 # 規劃路徑
                 path = self._plan_single_robot_with_offset(start, goal, robot_id)
-
                 if path is None:
-                    print(f"   錯誤：無法為機器人 {robot_id} 找到路徑！")
-                    print(f"   可能原因：")
-                    print(f"   1. 起點或終點不可達")
-                    print(f"   2. 與其他機器人衝突無法解決")
-                    print(f"   3. 搜索超時")
+                    print(f"   無法找到路徑！")
                     return {}
 
-                current_path_end_time = path[-1][1]
-                current_path_end_pos = path[-1][0]
-
+                path_end_time = path[-1][1]
                 if replan_count == 0:
-                    print(f"   路徑長度：{len(path)} 完成時間: {current_path_end_time}")
+                    print(f"   初始路徑: 長度 {len(path)}, 結束時間 {path_end_time}")
                 else:
-                    print(f"   第 {replan_count} 次重規劃：路徑長度 {len(path)} 完成時間: {current_path_end_time}")
+                    print(f"   第 {replan_count} 次重規劃: 長度 {len(path)}, 結束時間 {path_end_time}")
+                # 第一個機器人强制延長上一輪
+                if is_first_robot and replan_count == 0 and previous_round_robots:
+                    print(f"\n   第一個機器人强制延長上一輪")
+                    extended_count = 0
+                    for prev_rid, (prev_pos, prev_time) in previous_round_robots.items():
+                        for t in range(prev_time + 1, path_end_time + 1):
+                            if (prev_pos, t) not in self.__spacetime_occupied:
+                                self.__spacetime_occupied[(prev_pos, t)] = prev_rid
+                                extended_count += 1
+                        # 更新previous_round_robots
+                        previous_round_robots[prev_rid] = (prev_pos, path_end_time)
 
+                    print(f"   延長了 {extended_count} 個時空點")
+                    print(f"   强制重新規劃...")
+                    continue  #  跳過衝突檢查 直接重規劃
 
-                # 檢查之前機器人的終點是否在當前路徑上
-                has_conflict = False
+                # 衝突檢查
+                conflict = self._check_conflict(
+                    path,
+                    robot_id,
+                    previous_round_robots,
+                    self.__current_round_paths
+                )
+                if conflict:
+                    print(f"   檢測到衝突: 位置 {conflict['position']}, 時間 {conflict['time']}")
+                    # 延長衝突的機器人
+                    self._extend_conflicting_robots(
+                        conflict,
+                        path_end_time,
+                        previous_round_robots,
+                        self.__current_round_paths
+                    )
+                    continue  # 重新規劃
 
-                # 同一輪的路徑規劃中，只需要考慮時間更長情況，時間更長才會產生衝突
-                if current_max_res_time < current_path_end_time and current_max_res_time>0:
-                    # if max_time < current_path_end_time or count_times == 0:
-                    # count_times += 1 # 第一次的話，all_paths是空的
-                    # 找出所有在 reservation_table 中的机器人终点位置
-                    # 终点 = 在最大时间的位置
+                # 無衝突 接受路徑
+                print(f"   路徑有效")
+                self.__current_round_paths[robot_id] = path
+                self._occupy_spacetime(path, robot_id)
+                break
 
-                    # ouccupied position是不是可以被robot_real_end_pos 替代？
-                    occupied_positions = set(robot_end_positions.values())
-                    # for (pos, t) in self.__reservation_table.keys():
-                    #     if t == max_reservation_table_time:
-                    #         occupied_positions.add(pos)
-
-                    # 检查当前路径在 max_reservation_table_time 之后是否经过这些位置
-                    for pos, t in path:
-                        if t > current_max_res_time  and pos in occupied_positions:
-                            print(f"   機器人 {robot_id}  路徑在時間 {t} 經過位置 {pos}（其他機器人的終點）")
-                            has_conflict = True
-                            break  # 衝突則停止此for循環
-
-                if not has_conflict:
-                    found_valid_path = True
-                    final_path = path
-                    break  # 跳出重規劃for循環 下方延長不運行
-
-                # 如果有衝突，需要重新規劃
-                print(f"\n   機器人 {robot_id} 需要重新規劃! ")
-
-                extension_count = 0
-                # 將所有機器人在reservation_table裏面的時間都延長到這條衝突路徑的終點時間
-                for robid, robpo in robot_end_positions.items():
-                    for nt in range(current_max_res_time + 1, current_path_end_time+1):
-                        if (pos, nt) not in self.__reservation_table:
-                            self.__reservation_table[(robpo, nt)] = robid
-                            extension_count += 1
-
-                print(f"   延長了 {extension_count} 個時空點")
-                # for (pos, t) in list(self.__reservation_table.keys()):
-                #     if t == max_reservation_table_time:
-                #         # 找出占用這個位置的機器人
-                #         occupying_robot = self.__reservation_table[(pos, t)]
-                #         # 延長到當前路徑結束時間
-                #         for new_t in range(max_reservation_table_time+1, current_path_end_time+1):
-                #             if (pos, new_t) not in self.__reservation_table:
-                #                 self.__reservation_table[(pos, new_t)] = occupying_robot
-            # 規劃10個機器人路徑的for循環結束
-            if not found_valid_path:
-                print(f"   重新規劃次數超過限制！")
+            else:  # for-else
+                print(f"   重規劃次數超過限額！")
                 return {}
 
-            # 確認無衝突後，預定路徑
-            self._reserve_path(final_path, robot_id)
-            all_paths[robot_id] = final_path
+            # 對齊所有機器人
+            self._align_all_robots(previous_round_robots, self.__current_round_paths)
 
-            final_pos = final_path[-1][0]
-            final_time = final_path[-1][1]
-            # robot_real_end_info[robot_id] = (final_pos, final_time)
-            # 更新robot_real_end_pos情況
-            # robot_real_end_pos[robot_id] = final_pos
-            print(f"   機器人 {robot_id} 路徑確認，真實結束: 位置{final_pos}, 時間{final_time}")
+        # 3. 最終驗證階段
+        print(f"\n{'=' * 60}")
+        print(f"最終路徑驗證...")
+        conflict_msg = self._validate_all_paths(self.__current_round_paths)
+        if conflict_msg:
+            # TODO等待策略
+            return {}
 
-            # 延長所有已規劃機器人的終點到當前最大時間
-            if all_paths:
-                current_max_time = max(p[-1][1] for p in all_paths.values()) # 該論規劃路徑中的最大時間
-                # 掃描所有機器人的最後狀態
-                robot_last_state = {}
-                for(pos, t), rid in self.__reservation_table.items():
-                    if rid not in robot_last_state or t > robot_last_state[rid][1]:
-                        robot_last_state[rid] = (pos, t)
-                # 更新當前輪次的機器人
-                for rid, path in all_paths.items():
-                    robot_last_state[rid] = (path[-1][0], path[-1][1])
+        # 4. 收尾階段
+        # 更新 previous_round_info（为下一輪做準備）
+        for rid, path in self.__current_round_paths.items():
+            self.__previous_round_info[rid] = (path[-1][0], path[-1][1])
 
-                # 延長所有機器人
-                for rid, (pos, last_time) in robot_last_state.items():
-                    for t in range(last_time+1, current_max_time+1):
-                        if(pos, t) not in self.__reservation_table:
-                            self.__reservation_table[(pos, t)] = rid
-                # for rbid, rbpath in all_paths.items():
-                #     finalpath_pos = rbpath[-1][0]
-                #     finalpath_time = rbpath[-1][1]
-                    # 如果finalpath_time比current_max_time小，則需要刪除這部分，再加
-                    # 如果finalpath_time比current_max_time大，那麽finalpath_time就是current_max_time，
-                    # 其他機器人需要補充從他們的finalpath_time到current_max_time
-
-                # for rbid, rbpos in robot_real_end_pos.items():
-                    # 延長到當前最大時間
-                    # for t in range(finalpath_time + 1 , current_max_time + 1):
-                    #     # if (final_pos, t) not in self.__reservation_table:
-                    #     self.__reservation_table[(finalpath_pos, t)] = rbid
-
-            # 所有機器人規劃 for循環結束
         # 更新全局時間偏移
-        if all_paths:
-            max_time = max(p[-1][1] for p in all_paths.values())
+        if self.__current_round_paths:
+            max_time = max(p[-1][1] for p in self.__current_round_paths.values())
             self.__global_time_offset = max_time
-            print(f"更新全局時間偏移至: {self.__global_time_offset}")
 
-        # self._reserve_goal_indefinitely(all_paths)
-        print(f"\n{'=' * 50}")
-        print(f"✓ 所有机器人路径规划完成！")
-        print(f"  最終預定表大小: {len(self.__reservation_table)}")
-        print(f"{'=' * 50}")
+        print(f"\n{'=' * 60}")
+        print(f"  本輪規劃完成")
+        print(f"  時空占用點數: {len(self.__spacetime_occupied)}")
+        print(f"  全局時間偏移: {self.__global_time_offset}")
+        print(f"{'=' * 60}\n")
 
-        return all_paths
-
-    # def plan_for_delivery(self,
-    #          robot_start_id_dict: Dict[int, int],
-    #          robot_goal_id_dict: Dict[int, Tuple[int, int]],
-    #          priority_order: Optional[List[int]] = None) -> Dict[int, List[Tuple[int, int]]]:
-    #     """
-    #         CA*主函數：為所有機器人規劃協作路徑（支持取货-送货两段路径）
-    #         參數:
-    #            robot_start_id_dict: 機器人起始位置字典 {robot_id: start_position}
-    #            robot_goal_id_dict: 機器人目標位置字典 {robot_id: (pickup_position, delivery_position)}
-    #            priority_order: 可選的優先級順序列表，如果不提供則按robot_id排序
-    #         返回:
-    #         {robot_id: [(position, time), ...]}
-    #         算法流程:
-    #         1. 为每个机器人规划两段路径：
-    #             - 第一段：start → pickup
-    #             - 第二段：pickup → delivery
-    #         2. 确保两段路径时间连续
-    #         3. 整体处理冲突
-    #     """
-    #     # 保留 >= global_time_offset的預定表
-    #     keys_to_remove = [k for k in self.__reservation_table.keys()
-    #                       if k[1] < self.__global_time_offset]
-    #     for k in keys_to_remove:
-    #         del self.__reservation_table[k]
-    #
-    #     if set(robot_start_id_dict.keys()) != set(robot_goal_id_dict.keys()):
-    #         print(f"Error: 起点和目标数量不匹配")
-    #         return {}
-    #
-    #     all_paths: Dict[int, List[Tuple[int, int]]] = {}
-    #
-    #     if priority_order is None:
-    #         robot_ids = sorted(robot_start_id_dict.keys())
-    #     else:
-    #         robot_ids = priority_order
-    #         if set(robot_ids) != set(robot_start_id_dict.keys()):
-    #             print(f"Error with priority order")
-    #             return {}
-    #     period_time = max(p[-1][1] for p in self.__reservation_table.keys())
-    #     print(f"開始為 {len(robot_ids)} 個機器人規劃路徑（取货-送货模式）...")
-    #     print(f"優先級順序: {robot_ids}")
-    #     print(f"此階段的最早時間（上個階段的結尾時間）為：{period_time}")
-    #
-    #
-    #     for idx, robot_id in enumerate(robot_ids):
-    #         start = robot_start_id_dict[robot_id]
-    #         pickup, delivery = robot_goal_id_dict[robot_id]
-    #
-    #         print(f"\n[{idx + 1}/{len(robot_ids)}] 規劃機器人 {robot_id}:")
-    #         print(f"   路线: {start} → {pickup} (取货) → {delivery} (送货)")
-    #
-    #         # 重規劃循環
-    #         max_replans = 10
-    #         found_valid_path = False
-    #         final_complete_path = None
-    #
-    #         for replan_count in range(max_replans):
-    #             # 第一段：start 2 pickup
-    #             path2pickup = self._plan_single_robot_with_offset(start, pickup, robot_id)
-    #
-    #             if path2pickup is None:
-    #                 print(f"   錯誤：無法規劃到取货点 {pickup}")
-    #                 return {}
-    #
-    #             pickup_time = path2pickup[-1][1]  # 到达取货点的时间
-    #             if replan_count == 0:
-    #                 print(f"      路徑長度：{len(path2pickup)} 步，到达時間 {pickup_time}")
-    #             else:
-    #                 print(f"      第 {replan_count} 次重規劃：長度 {len(path2pickup)} 步，時間 {pickup_time}")
-    #
-    #             # 檢查衝突
-    #             has_conflict = False
-    #             max_reservation_table_time = max(
-    #                 t for (pos, t) in self.__reservation_table.keys()
-    #             ) if self.__reservation_table else 0
-    #
-    #             if max_reservation_table_time > 0 and pickup_time >max_reservation_table_time:
-    #                 occupied_positions = set()
-    #                 for (pos, t) in self.__reservation_table.keys():
-    #                     if t == max_reservation_table_time:
-    #                         occupied_positions.add(pos)
-    #
-    #                 for pos, t in path2pickup:
-    #                     if t > max_reservation_table_time and pos in occupied_positions:
-    #                         print(f"     路徑在時間 {t} 經過位置 {pos}（其他機器人的終點）")
-    #                         has_conflict = True
-    #                         break
-    #
-    #             if not has_conflict:
-    #                 found_valid_path = True
-    #                 final_pickup_path = path2pickup
-    #                 break
-    #             # 有衝突，延長預定表
-    #             print(f"    存在衝突，延長預定表並重新規劃...")
-    #             for (pos, t) in list(self.__reservation_table.keys()):
-    #                 if t == max_reservation_table_time:
-    #                     occupying_robot = self.__reservation_table[(pos, t)]
-    #                     for new_t in range(max_reservation_table_time+1, pickup_time+1):
-    #                         if (pos, new_t) not in self.__reservation_table:
-    #                             self.__reservation_table[(pos, new_t)] = occupying_robot
-    #         if not found_valid_path:
-    #             print(f"    到取货点的重新規劃次數超過限制！")
-    #             return {}
-    #
-    #         # 預定到取货点的路徑
-    #         self._reserve_path(final_pickup_path, robot_id)
-    #         all_paths[robot_id] = final_pickup_path
-    #         pickup_arrival_time = final_pickup_path[-1][1]
-    #         print(f"    到取货点路徑已確認，到達時間 {pickup_arrival_time}")
-    #         if all_paths:
-    #             current_max_time = max(p[-1][1] for p in all_paths.values())
-    #             for rbid, rbpath in all_paths.items():
-    #                 final_pos = rbpath[-1][0]
-    #                 final_time = rbpath[-1][1]
-    #
-    #                 # 延長到當前最大時間
-    #                 for t in range(final_time + 1 , current_max_time + 1):
-    #                     if (final_pos, t) not in self.__reservation_table:
-    #                         self.__reservation_table[(final_pos, t)] = rbid
-    #         # if
-    #
-    #
-    #
-    #         # 第二段：pickup 2 delivery
-    #         # 从取货点开始的时间是 pickup_time
-    #         # 需要临时修改 global_time_offset 来规划第二段
-    #             original_offset = self.__global_time_offset
-    #             self.__global_time_offset = pickup_time
-    #
-    #             path_to_delivery = self._plan_single_robot_with_offset(pickup, delivery, robot_id)
-    #
-    #             # 恢复原始偏移
-    #             self.__global_time_offset = original_offset
-    #
-    #             if path_to_delivery is None:
-    #                 print(f"   ❌ 錯誤：無法從取货点 {pickup} 規劃到送货点 {delivery}")
-    #                 return {}
-    #
-    #             # ========== 合并两段路径 ==========
-    #             # 注意：path_to_delivery 的第一个点是 pickup，与 path_to_pickup 的最后一个点重复
-    #             complete_path = path2pickup + path_to_delivery[1:]  # ✅ 去掉重复点
-    #
-    #             current_path_end_time = complete_path[-1][1]
-    #
-    #             if replan_count == 0:
-    #                 print(f"   第一段：{len(path2pickup)} 步，到达取货点时间 {pickup_time}")
-    #                 print(f"   第二段：{len(path_to_delivery)} 步")
-    #                 print(f"   完整路徑：{len(complete_path)} 步，完成時間 {current_path_end_time}")
-    #             else:
-    #                 print(
-    #                     f"   第 {replan_count} 次重規劃：完整路徑 {len(complete_path)} 步，完成時間 {current_path_end_time}")
-    #
-    #             # ========== 檢查衝突 ==========
-    #             has_conflict = False
-    #             max_reservation_table_time = max(
-    #                 t for (pos, t) in self.__reservation_table.keys()
-    #             ) if self.__reservation_table else 0
-    #
-    #             if max_reservation_table_time > 0 and current_path_end_time > max_reservation_table_time:
-    #                 # 找出在最大時間的所有終點位置
-    #                 occupied_positions = set()
-    #                 for (pos, t) in self.__reservation_table.keys():
-    #                     if t == max_reservation_table_time:
-    #                         occupied_positions.add(pos)
-    #
-    #                 # 檢查完整路徑是否經過這些終點位置
-    #                 for pos, t in complete_path:
-    #                     if t > max_reservation_table_time and pos in occupied_positions:
-    #                         print(f"   ⚠️ 路徑在時間 {t} 經過位置 {pos}（其他機器人的終點）")
-    #                         has_conflict = True
-    #                         break
-    #
-    #             # ✅ 沒有衝突，找到有效路徑
-    #             if not has_conflict:
-    #                 found_valid_path = True
-    #                 final_complete_path = complete_path
-    #                 break
-    #
-    #             # ✅ 有衝突，延長預定表並繼續循環
-    #             print(f"   🔄 延長預定表並準備重新規劃...")
-    #             for (pos, t) in list(self.__reservation_table.keys()):
-    #                 if t == max_reservation_table_time:
-    #                     occupying_robot = self.__reservation_table[(pos, t)]
-    #                     for new_t in range(max_reservation_table_time + 1, current_path_end_time + 1):
-    #                         if (pos, new_t) not in self.__reservation_table:
-    #                             self.__reservation_table[(pos, new_t)] = occupying_robot
-    #
-    #         # ✅ 檢查是否找到有效路徑
-    #         if not found_valid_path:
-    #             print(f"   ❌ 重新規劃次數超過限制 ({max_replans})！")
-    #             return {}
-    #
-    #         # ✅ 預定最終完整路徑
-    #         self._reserve_path(final_complete_path, robot_id)
-    #         all_paths[robot_id] = final_complete_path
-    #         print(f"   ✓ 機器人 {robot_id} 完整路徑已確認並預定")
-    #
-    #         # ✅ 延長所有已規劃機器人的終點到當前最大時間
-    #         if all_paths:
-    #             current_max_time = max(p[-1][1] for p in all_paths.values())
-    #
-    #             for rid, rpath in all_paths.items():
-    #                 final_pos = rpath[-1][0]
-    #                 final_time = rpath[-1][1]
-    #
-    #                 for t in range(final_time + 1, current_max_time + 1):
-    #                     if (final_pos, t) not in self.__reservation_table:
-    #                         self.__reservation_table[(final_pos, t)] = rid
-    #
-    #     # ✅ 更新全局時間偏移
-    #     if all_paths:
-    #         max_time = max(p[-1][1] for p in all_paths.values())
-    #         self.__global_time_offset = max_time
-    #         print(f"\n⏰ 更新全局時間偏移至: {self.__global_time_offset}")
-    #
-    #     print(f"\n{'=' * 50}")
-    #     print(f"✓ 所有機器人路徑規劃完成！")
-    #     print(f"  最終預定表大小: {len(self.__reservation_table)}")
-    #     print(f"{'=' * 50}")
-    #
-    #     return all_paths
-
-
-
-
-    def get_reservation_table(self) -> Dict[Tuple[int, int], int]:
-        return self.__reservation_table.copy()
-
-    def clear_reservation_table(self):
-        self.__reservation_table.clear()
-
+        return self.__current_round_paths
 
 class CAstarPlanner(PathPlanner):
     def __init__(self, map_input: Map):
         super().__init__(map_input)
         self.__G = map_input.G
 
-
     def plan_path(self, start: int, goal: int) -> List[int]:
+        """單機器人路徑規劃"""
         path = []
         try:
             path = nx.shortest_path(self.__G, start, goal)
@@ -860,64 +564,22 @@ class CAstarPlanner(PathPlanner):
             print('Warning: No Path Found!')
         return path
 
-    def plan_paths(self, starts: Dict[int, int], goals: Dict[int, int]) \
-            -> Dict[int, List[int]]:
-
-        robot_paths = dict()
-        # 一步 CA*
-        if len(starts) != len(goals):
-            print('Warning: Starts and Goals do not match!')
-            return robot_paths
-
-        first_robot = next(iter(starts))
-        first_goal = starts[first_robot]
-        path = self.plan_path(first_robot, first_goal)
-
-        dynamic_obstacles = dict()
-        for robot_id in starts:
-
-            start_id = starts[robot_id]
-            goal_id = goals[robot_id]
-            if (list(starts).index(robot_id) == 0):
-                path = self.plan_path(start_id, goal_id)
-
-                dynamic_obstacles = {i: set(tuple(self._map.id2pos(index)[0], self._map.id2pos(index)[0])) for i, index in enumerate(path) }
-                robot_paths[robot_id] = path
-            else:
-                path_id = []
-                path = Planner.plan(self._map.id2pos(start_id), self._map.id2pos(goal_id),
-                                    dynamic_obstacles)
-                for x, y in path:
-                    ind = self._node_pos2id((x,y))
-                    path_id.append(ind)
-                    robot_paths[robot_id] = path_id
-
-        return robot_paths
-
-
-    def plan_paths_from_CAstar(self,starts: Dict[int, int], goals: Dict[int, int],
-                               priority_order: Optional[List[int]] = None,
-                               idle_robots_positions: Optional[Dict[int, int]] = None) \
-            -> Dict[int, List[int]]:
-        """
-        调用 CooperativeAStar 进行“协作式”规划，返回每个机器人的“节点ID序列”（按时间顺序）。
-        参数：
-            - starts/goals: {robot_id: node_id}
-            - priority_order: 可选的优先级（不传默认按robot_id升序）
-        """
-        # 複用實例
+    def plan_paths_from_CAstar(self, starts: Dict[int, int], goals: Dict[int, int],
+                               priority_order: Optional[List[int]] = None) -> Dict[int, List[int]]:
+        """使用CA*規劃多機器人路徑"""
         if not hasattr(self, '_ca_instance'):
             self._ca_instance = CooperativeAStar(self._map)
-        # ca = CooperativeAStar(self._map)
-        ca = self._ca_instance
 
+        ca = self._ca_instance
         time_paths = ca.plan(starts, goals, priority_order)
+
         if not time_paths:
             return {}
 
+        # 轉換爲節點ID序列（去重）
         out: Dict[int, List[int]] = {}
         for rid, pt in time_paths.items():
-            seq = [p for (p,_) in pt]
+            seq = [p for (p, _) in pt]
             if seq:
                 comp = [seq[0]]
                 for x in seq[1:]:
@@ -927,59 +589,38 @@ class CAstarPlanner(PathPlanner):
             out[rid] = seq
         return out
 
-
-    def plan_paths_with_state(self, robot_start_id_dict: Dict[int, int], robot_goal_id_dict: Dict[int, int],
+    def plan_paths_with_state(self, robot_start_id_dict: Dict[int, int],
+                              robot_goal_id_dict: Dict[int, int],
                               reservation_table: Dict[Tuple[int, int], int],
                               time_offset: int,
                               priority_order: Optional[List[int]] = None,
                               delivery: bool = False) \
             -> Tuple[Dict[int, List[int]], Dict[Tuple[int, int], int], int]:
-        """
-        带状态的路径规划
-        参数:
-            robot_start_id_dict/robot_goal_id_dict: 起点和终点
-            robot_goal_id_dict會傳入兩種可能，通過delivery處理調用不同的規劃函數
-                - Dict[robot_id: Tuple['goal', 'delivery_goal']]
-                - Dict[robot_id: 'goal']
-            reservation_table: 当前的预定表（会被复制，不修改原表）
-            time_offset: 当前的全局时间偏移
-            priority_order: 优先级
-        返回:
-            (路径字典, 更新后的预定表, 新的时间偏移)
-        """
-        if not delivery:  # - Dict[robot_id: 'goal']
-            # 创建新的CooperativeAStar实例，傳入狀態
-            ca = CooperativeAStar(self._map)
+        """帶狀態的路徑規劃"""
+        ca = CooperativeAStar(self._map)
+        ca.set_state(reservation_table.copy(), time_offset)
 
-            # 傳入外部狀態
-            ca.set_state(reservation_table.copy(), time_offset)
+        time_paths = ca.plan(robot_start_id_dict, robot_goal_id_dict, priority_order)
 
-            # 執行規劃
-            time_paths = ca.plan(robot_start_id_dict, robot_goal_id_dict, priority_order)
-            if not time_paths:
-                return {}, reservation_table, time_offset
-            # 獲取更新后的狀態
-            updated_table = ca.get_reservation_table()
-            new_offset = ca.get_time_offset()
+        if not time_paths:
+            return {}, reservation_table, time_offset
 
-            # 转换为節點ID序列
-            out: Dict[int, List[int]] = {}
-            for rid, pt in time_paths.items():
-                seq = [p for (p, _) in pt]
-                if seq:
-                    comp = [seq[0]]
-                    for x in seq[1:]:
-                        if x != comp[-1]:
-                            comp.append(x)
-                    seq = comp
-                out[rid] = seq
+        # 獲取更新後的狀態
+        updated_table = ca.get_reservation_table()
+        new_offset = ca.get_time_offset()
 
-            return out, updated_table, new_offset
+        # 轉換為節點ID序列
+        out: Dict[int, List[int]] = {}
+        for rid, pt in time_paths.items():
+            seq = [p for (p, _) in pt]
+            if seq:
+                comp = [seq[0]]
+                for x in seq[1:]:
+                    if x != comp[-1]:
+                        comp.append(x)
+                seq = comp
+            out[rid] = seq
 
-        else:
-            ca = CooperativeAStar(self._map)
-            ca.set_state(reservation_table.copy(), time_offset)
-
-            time_paths = ca.plan(robot_start_id_dict, robot_goal_id_dict, priority_order)
+        return out, updated_table, new_offset
 
 
