@@ -35,7 +35,7 @@ class Env:
         self.global_time_offset: int = 0
 
     # 随机生成任务点和小车起始点
-    def generate_random_tasks(self, num_tasks, seed=0):
+    def generate_random_tasks(self, num_tasks, seed=0, for_delivery: bool = False):
         normal_nodes = self.demo_map.nodes_by_type('normal')
         if len(normal_nodes) < num_tasks * 2:
             raise ValueError("Nodes are not enough for unique task and robot starts")
@@ -52,19 +52,18 @@ class Env:
         # print(f"len3: {len(delivery_goal_points)}, {delivery_goal_points[0]}")
         tasks = []
 
-        for goal in task_goal_points:
-            tasks.append({
-                'goal': goal,
-            })
-        robots = {
-            i: Robot(i, start, 1, self.demo_map)
-            for i, start in enumerate(robot_start_points)
-        }
-        # for goal, delivery in zip(task_goal_points, delivery_goal_points):
-        #     tasks.append({
-        #         'goal': goal,
-        #         'delivery_goal': delivery
-        #     })
+        if not for_delivery:
+            for goal in task_goal_points:
+                tasks.append({
+                    'goal': goal,
+                })
+        else:
+            for goal, delivery in zip(task_goal_points, delivery_goal_points):
+                tasks.append({
+                    'goal': goal,
+                    'delivery_goal': delivery
+                })
+
         robots = {
             i: Robot(i, start, 1, self.demo_map)
             for i, start in enumerate(robot_start_points)
@@ -77,7 +76,14 @@ class Env:
         for path in paths.values():
             total_length += len(path) - 1
         return total_length
-    
+
+    def update_robot_goal_id(self, robots: Dict[int, Robot], robot_goal_id_dict: Dict[int, int]) -> None:
+        # robot_goal_id_dict = {robot_id: goal}
+        for rbid, rb in robots.items():
+            if rbid not in robot_goal_id_dict:
+                print("Error with robot which is not allocated! ")
+            else:
+                rb.set_goal_id(robot_goal_id_dict[rbid])
     
     # def generate_task_assignments(self, robots, tasks, robot_start_id_dict, robot_goal_id_dict):
     #
@@ -132,31 +138,40 @@ class Env:
     #         goal_id = assignment['goal_id']
     #         robots[robot_id].set_goal_id(goal_id)
 
-    def execute_round(self, robots, robot_paths, executor, logger, fig_save_dir, round_num):
+    def execute_round(self, robots, robot_paths, executor, logger, fig_save_dir, round_num, time_step: int = 0, for_delivery: bool = False):
         """执行一轮任务"""
         # 设置路径
-        for robot_id in robot_paths:
+        # for robot_id in robot_paths:
+        #     robots[robot_id].set_path(robot_paths[robot_id])
+        for robot_id, path in robot_paths.items():
+            cur = robots[robot_id].node_id()
+            print(f"cur: {cur}, path_start:{path[0]}")
             robots[robot_id].set_path(robot_paths[robot_id])
-
-        # 初始可视化
-        self.board.show_robots(robots, robot_paths,
-                               filename=f'{fig_save_dir}/round{round_num}_step0',
-                               plt_show=False)
+        if not for_delivery:
+            # 初始可视化
+            self.board.show_robots(robots, robot_paths,
+                                   filename=f'{fig_save_dir}/round{round_num}_step0',
+                                   plt_show=False)
+        else:
+            self.board.show_robots(robots, robot_paths,
+                                   filename=f'{fig_save_dir}/round{round_num}_step{time_step}',
+                                   plt_show=False)
         # 执行直到本轮完成
         timestep = 0
         for timestep in range(10000):
             moving = [r for r in robots.values() if len(r.path()) > 0]
             if not moving:
                 break
+            logger.info(f'Seed: {self.seed}')
             logger.info(f'Round {round_num}, Timestep {timestep}: ' + str(executor))
             executor.execute_actions()
 
             # 可视化
             self.board.show_robots(robots, robot_paths,
-                                   filename=f'{fig_save_dir}/round{round_num}_step{timestep + 1}',
+                                   filename=f'{fig_save_dir}/round{round_num}_step{timestep + time_step}',
                                    plt_show=False)
 
-        print(f"第 {round_num + 1} 轮完成，耗时 {timestep} 步")
+        print(f"第 {round_num + 1} 轮完成，耗时 {timestep + time_step} 步")
         return timestep + 1
 
 
@@ -168,11 +183,11 @@ class Env:
             os.makedirs(fig_save_dir)
         robot_start_id_dict, robot_goal_id_dict = dict(), dict()
         tasks = list()
-        num_tasks =25
+        num_tasks = 25
         robot_num = 10
 
         robots = dict()
-        tasks, all_robots = self.generate_random_tasks(num_tasks, seed=self.seed)
+        tasks, all_robots = self.generate_random_tasks(num_tasks, seed=self.seed, for_delivery=True)
         robots = {i: all_robots[i] for i in range(robot_num)}
 
         scheduler = TaskSchedular(self.demo_map, robots, tasks)
@@ -196,14 +211,14 @@ class Env:
         # ========== 多轮调度 =========
         all_rounds_data = []  # 存储每轮数据
         total_timesteps = 0
-
         while scheduler.pending_tasks or scheduler.assigned_tasks:
+            is_RoundZero = True if total_timesteps == 0 else False
             scheduler.allocate_round()
             for rb_id, rb_a in robots.items():
                 print("--"*25, "\n", f"robot_id {rb_id}: state {rb_a.state()}, goal_id {rb_a.node_id()}")
 
-            robot_start_id_dict, robot_goal_id_dict = scheduler.get_current_allocation()  # 單點demo
-            # robot_start_id_dict, robot_goal_id_dict = scheduler.get_current_allocation_with_delivery()
+            # 取貨段
+            robot_start_id_dict, robot_goal_id_dict = scheduler.get_current_allocation(for_delivery=False)  # 單點demo
             if not robot_start_id_dict:
                 break
 
@@ -220,7 +235,8 @@ class Env:
                     robot_goal_id_dict=robot_goal_id_dict,
                     reservation_table=self.global_reservation_table,
                     time_offset=self.global_time_offset,
-                    delivery = False
+                    delivery=False,
+                    is_RoundZero=is_RoundZero
                 )
 
             # 更新全局狀態
@@ -228,7 +244,7 @@ class Env:
             self.global_time_offset = new_time_offset
 
             if not robot_paths:
-                print("規划失敗")
+                print("取貨規划失敗")
                 break
 
             # 路徑規劃
@@ -238,15 +254,41 @@ class Env:
                 robots, robot_paths, executor, logger,
                 fig_save_dir, len(all_rounds_data)
             )
-            total_timesteps += round_steps
+
+
+            # 送貨段 - 從機器人當前位置到 delivery_goal
+            delivery_starts, delivery_goals = scheduler.get_current_allocation(for_delivery=True)
+            # 更新goal_id
+            self.update_robot_goal_id(robots, delivery_goals)
+            print(f"\n{'=' * 60}\n第 {len(all_rounds_data) + 1} 輪（投遞段）規劃開始")
+            robot_paths_2, updated_reservation_table_2, new_time_offset_2 = \
+                self.planner.plan_paths_with_state(
+                    robot_start_id_dict=delivery_starts,
+                    robot_goal_id_dict=delivery_goals,
+                    reservation_table=self.global_reservation_table,
+                    time_offset=self.global_time_offset,
+                    delivery=False,
+                    is_RoundZero=is_RoundZero
+                )
+            if not robot_paths_2:
+                print("送貨規划失敗")
+                break
+            round_steps_2 = self.execute_round(
+                robots, robot_paths_2, executor, logger,
+                fig_save_dir, len(all_rounds_data), round_steps,
+                True
+            )
+
+            total_timesteps += (round_steps+round_steps_2)
             # 標記已完成
             scheduler.complete_all_current_tasks()
 
             all_rounds_data.append({
                 'paths': robot_paths,
+                'paths_delivery': robot_paths_2,
                 'assignments': scheduler.assigned_tasks.copy()
             })
-            print(f"第 {len(all_rounds_data)} 輪完成，耗時 {round_steps} 步")
+            print(f"第 {len(all_rounds_data)} 輪完成，耗時 {round_steps+round_steps_2} 步")
             print(f"更新後時間偏移: {self.global_time_offset}")
             print(f"更新後預定表大小: {len(self.global_reservation_table)}\n")
 
@@ -265,6 +307,7 @@ class Env:
         total_SoC = 0
         for round_data in all_rounds_data:
             total_SoC += self.calculate_total_path_length(round_data['paths'])
+            total_SoC += self.calculate_total_path_length(round_data['paths_delivery'])
 
         try:
             init()
